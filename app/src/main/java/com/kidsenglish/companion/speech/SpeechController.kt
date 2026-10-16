@@ -86,6 +86,7 @@ class AndroidSpeechController(private val context: Context) : SpeechController {
         SpeechRecognizer.ERROR_NETWORK, SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> "Speech service is offline."
         SpeechRecognizer.ERROR_NO_MATCH, SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> "I could not hear the sentence. Try again."
         SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> "Speech recognition is busy. Try again."
+        SpeechRecognizer.ERROR_CLIENT -> "Speech recognition was cancelled."
         else -> "Speech recognition stopped. Try again."
     }
 }

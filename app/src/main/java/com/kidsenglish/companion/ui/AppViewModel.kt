@@ -108,6 +108,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun startListening() {
+        if (_uiState.value.isListening) return
         _uiState.update { it.copy(isListening = true, speakingFeedback = null) }
         container.speechController.startListening(
             onResult = { recognized ->
@@ -141,7 +142,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     fun sendTutorMessage(message: String) {
         val state = _uiState.value
         val story = state.currentStory ?: return
-        if (message.isBlank()) return
+        if (message.isBlank() || message.length > 500 || state.tutorLoading) return
         if (state.settings.baseUrl.isBlank()) {
             _uiState.update { it.copy(tutorStatus = "AI tutor is offline") }
             return

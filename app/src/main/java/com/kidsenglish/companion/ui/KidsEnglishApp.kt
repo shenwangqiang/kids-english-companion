@@ -131,6 +131,7 @@ private fun PracticeScreen(modifier: Modifier, state: AppUiState, viewModel: App
             if (feedback.missedWords.isNotEmpty()) Text("Try these words again: ${feedback.missedWords.joinToString()}")
             OutlinedButton(onClick = requestMic, modifier = Modifier.fillMaxWidth()) { Text("Try again") }
         }
+        Text("This is a word-match practice score, not a professional pronunciation assessment.")
         Text("Speech recognition availability depends on the Android device. Reading and audio still work offline.")
     }
 }
@@ -148,9 +149,9 @@ private fun TutorScreen(modifier: Modifier, state: AppUiState, viewModel: AppVie
                 Card(Modifier.fillMaxWidth()) { Text("$speaker: ${message.content}", Modifier.padding(12.dp)) }
             }
         }
-        OutlinedTextField(input, { input = it }, label = { Text("Ask about this story") }, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(input, { input = it.take(500) }, label = { Text("Ask about this story") }, supportingText = { Text("${input.length}/500") }, modifier = Modifier.fillMaxWidth())
         Button(
-            onClick = { viewModel.sendTutorMessage(input); input = "" },
+            onClick = { viewModel.sendTutorMessage(input) },
             enabled = input.isNotBlank() && !state.tutorLoading,
             modifier = Modifier.fillMaxWidth(),
         ) { Text(if (state.tutorLoading) "Thinking…" else "Ask") }
