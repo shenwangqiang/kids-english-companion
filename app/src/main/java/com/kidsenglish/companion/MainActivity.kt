@@ -1,38 +1,38 @@
 package com.kidsenglish.companion
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
+import androidx.core.content.ContextCompat
+import com.kidsenglish.companion.ui.AppViewModel
+import com.kidsenglish.companion.ui.KidsEnglishApp
 import com.kidsenglish.companion.ui.theme.KidsEnglishTheme
 
 class MainActivity : ComponentActivity() {
+    private val viewModel: AppViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent { KidsEnglishTheme { LoadingScreen() } }
-    }
-}
-
-@Composable
-private fun LoadingScreen() {
-    Surface(modifier = Modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier.padding(32.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Text("Kids English Companion", style = MaterialTheme.typography.headlineMedium)
-            Text("Loading library…", style = MaterialTheme.typography.bodyLarge)
+        val microphonePermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            if (granted) viewModel.startListening()
+        }
+        setContent {
+            KidsEnglishTheme {
+                KidsEnglishApp(
+                    viewModel = viewModel,
+                    onRequestMicrophone = {
+                        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                            viewModel.startListening()
+                        } else {
+                            microphonePermission.launch(Manifest.permission.RECORD_AUDIO)
+                        }
+                    },
+                )
+            }
         }
     }
 }
