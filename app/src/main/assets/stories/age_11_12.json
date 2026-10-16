@@ -1,0 +1,158 @@
+[
+  {
+    "id":"last-light-harbor","title":"The Last Light in Harbor Town","ageBand":"11-12","cefr":"B1","summary":"Young neighbors organize a safe response when a storm cuts power to their harbor.",
+    "paragraphs":[
+      {"id":"p1","sentences":[
+        {"id":"s1","text":"A strong autumn storm knocks out the electricity in Harbor Town just before evening.","chineseHint":"一场强烈的秋季风暴在傍晚前切断了港湾镇的电力。"},
+        {"id":"s2","text":"Twelve-year-old Imani sees that the small lighthouse still has one battery-powered lamp.","chineseHint":"十二岁的伊玛尼发现小灯塔还有一盏电池灯。"},
+        {"id":"s3","text":"Fishing boats are already inside the harbor, but several older neighbors live alone on the dark hill.","chineseHint":"渔船已进港，但几位老人独自住在黑暗的山坡上。"}]},
+      {"id":"p2","sentences":[
+        {"id":"s4","text":"Imani and her friend Tomas make a list of homes to check, then tell an adult rescue volunteer before leaving.","chineseHint":"伊玛尼和托马斯列出要查看的住户，并在出发前告知成年救援志愿者。"},
+        {"id":"s5","text":"They carry flashlights, water, and a charged radio, and they stay together on the marked path.","chineseHint":"他们带着手电、水和充好电的无线电，并始终结伴走在标记小路上。"},
+        {"id":"s6","text":"At each house, they check that everyone is warm and report any need over the radio.","chineseHint":"每到一户，他们确认大家是否温暖，并通过无线电报告需求。"},
+        {"id":"s7","text":"By midnight the town hall has become a bright shelter, while the last lighthouse lamp continues to guide volunteers.","chineseHint":"午夜时镇公所成为明亮的避难所，灯塔最后的灯继续引导志愿者。"}]}
+    ],
+    "vocabulary":[
+      {"word":"harbor","definition":"a protected place where boats stay","chinese":"港湾","example":"The boats enter the harbor."},
+      {"word":"electricity","definition":"energy used for lights and machines","chinese":"电力","example":"The storm cuts electricity."},
+      {"word":"volunteer","definition":"a person who helps without being paid","chinese":"志愿者","example":"A volunteer leads the rescue."},
+      {"word":"marked","definition":"shown with signs or symbols","chinese":"有标记的","example":"They use the marked path."},
+      {"word":"shelter","definition":"a safe place during danger","chinese":"避难所","example":"The town hall becomes a shelter."}
+    ],
+    "questions":[
+      {"id":"q1","prompt":"What causes the power cut?","answerConcepts":["storm"]},
+      {"id":"q2","prompt":"Who do Imani and Tomas tell before leaving?","answerConcepts":["adult rescue volunteer"]},
+      {"id":"q3","prompt":"What building becomes a shelter?","answerConcepts":["town hall"]}
+    ]
+  },
+  {
+    "id":"science-fair-promise","title":"Maya's Science Fair Promise","ageBand":"11-12","cefr":"B1","summary":"Maya chooses honest evidence over an impressive but unsupported result.",
+    "paragraphs":[
+      {"id":"p1","sentences":[
+        {"id":"s1","text":"Maya promises her team that their science fair project will show exactly what their experiment finds.","chineseHint":"玛雅向团队承诺，科学展项目会如实展示实验发现。"},
+        {"id":"s2","text":"They test whether bean plants grow faster under blue light than under white light.","chineseHint":"他们测试豆苗在蓝光下是否比白光下长得更快。"},
+        {"id":"s3","text":"After two weeks, the measurements show almost no difference between the two groups.","chineseHint":"两周后，测量结果显示两组几乎没有差异。"}]},
+      {"id":"p2","sentences":[
+        {"id":"s4","text":"A teammate suggests removing three short blue-light plants so the graph will look exciting.","chineseHint":"一名队友建议删掉三株较矮的蓝光豆苗，让图表更精彩。"},
+        {"id":"s5","text":"Maya refuses because deleting inconvenient results would make their conclusion misleading.","chineseHint":"玛雅拒绝了，因为删除不方便的结果会让结论产生误导。"},
+        {"id":"s6","text":"Instead, the team explains their method, includes every measurement, and discusses what they would test next.","chineseHint":"团队改为解释方法、保留所有测量，并讨论下一步测试。"},
+        {"id":"s7","text":"The judges praise their honest report and careful reasoning, even though the original idea was not supported.","chineseHint":"尽管原想法未被支持，评委仍表扬了他们诚实的报告和严谨推理。"}]}
+    ],
+    "vocabulary":[
+      {"word":"experiment","definition":"a test used to discover something","chinese":"实验","example":"The experiment uses bean plants."},
+      {"word":"measurements","definition":"numbers showing size, amount, or change","chinese":"测量数据","example":"They record measurements."},
+      {"word":"difference","definition":"a way things are not the same","chinese":"差异","example":"There is little difference."},
+      {"word":"misleading","definition":"causing someone to believe something untrue","chinese":"误导性的","example":"The graph would be misleading."},
+      {"word":"reasoning","definition":"careful thinking that supports a conclusion","chinese":"推理","example":"The judges praise their reasoning."}
+    ],
+    "questions":[
+      {"id":"q1","prompt":"What do the students compare?","answerConcepts":["blue light"]},
+      {"id":"q2","prompt":"Why does Maya keep every plant result?","answerConcepts":["misleading"]},
+      {"id":"q3","prompt":"What do the judges praise?","answerConcepts":["honest report"]}
+    ]
+  },
+  {
+    "id":"map-under-floor","title":"The Map Under the Floor","ageBand":"11-12","cefr":"B1","summary":"Friends investigate an old map without damaging a historic building.",
+    "paragraphs":[
+      {"id":"p1","sentences":[
+        {"id":"s1","text":"During repairs at the community theater, Jun and Amara notice a rolled map beneath a loose floorboard.","chineseHint":"社区剧院维修时，俊和阿玛拉在松动地板下发现一张卷起的地图。"},
+        {"id":"s2","text":"They do not pull up more wood; instead, they photograph the spot and call the theater manager.","chineseHint":"他们没有继续撬木板，而是拍下位置并联系剧院经理。"},
+        {"id":"s3","text":"A local historian dates the paper to 1912 and recognizes the drawing as an early plan of the neighborhood.","chineseHint":"当地历史学家认定纸张来自1912年，并看出这是街区早期规划图。"}]},
+      {"id":"p2","sentences":[
+        {"id":"s4","text":"A dotted line on the map ends at a square marked Water, but no modern map shows a well there.","chineseHint":"地图上的虚线终止于标有“水”的方框，但现代地图没有显示水井。"},
+        {"id":"s5","text":"Old newspapers reveal that the well supplied firefighters before the town built water pipes.","chineseHint":"旧报纸显示，铺设水管前，这口井曾为消防员供水。"},
+        {"id":"s6","text":"Experts scan the ground and locate the covered stone well without digging through the theater floor.","chineseHint":"专家扫描地面，无需挖开剧院地板就定位了被覆盖的石井。"},
+        {"id":"s7","text":"The map enters the town archive, where everyone can study it safely.","chineseHint":"地图被收入城镇档案馆，供大家安全研究。"}]}
+    ],
+    "vocabulary":[
+      {"word":"floorboard","definition":"a long wooden piece in a floor","chinese":"地板条","example":"The map is under a floorboard."},
+      {"word":"historian","definition":"a person who studies history","chinese":"历史学家","example":"A historian studies the map."},
+      {"word":"dotted","definition":"made from a series of small marks","chinese":"虚线的","example":"A dotted line crosses the map."},
+      {"word":"supplied","definition":"provided something that was needed","chinese":"供应","example":"The well supplied water."},
+      {"word":"archive","definition":"a place that preserves historical records","chinese":"档案馆","example":"The map enters the archive."}
+    ],
+    "questions":[
+      {"id":"q1","prompt":"Where is the map found?","answerConcepts":["floorboard"]},
+      {"id":"q2","prompt":"What did the old well supply?","answerConcepts":["water"]},
+      {"id":"q3","prompt":"Where is the map finally kept?","answerConcepts":["archive"]}
+    ]
+  },
+  {
+    "id":"week-without-plastic","title":"One Week Without Plastic","ageBand":"11-12","cefr":"A2","summary":"A family measures which disposable plastics they can realistically replace.",
+    "paragraphs":[
+      {"id":"p1","sentences":[
+        {"id":"s1","text":"Ravi's family decides to avoid single-use plastic for one week and record every difficult choice.","chineseHint":"拉维一家决定一周不用一次性塑料，并记录每个难题。"},
+        {"id":"s2","text":"They carry cloth bags, refill water bottles, and choose loose fruit instead of wrapped fruit.","chineseHint":"他们带布袋、重复装水，并选择散装水果。"},
+        {"id":"s3","text":"On Wednesday, Ravi needs medicine that comes only in a plastic package.","chineseHint":"周三，拉维需要一种只有塑料包装的药。"}]},
+      {"id":"p2","sentences":[
+        {"id":"s4","text":"The family buys the medicine because health matters more than making a perfect challenge record.","chineseHint":"家人买了药，因为健康比完美挑战记录更重要。"},
+        {"id":"s5","text":"By Sunday, they have used six plastic items instead of their usual thirty-two.","chineseHint":"到周日，他们用了六件塑料物品，而平时是三十二件。"},
+        {"id":"s6","text":"They learn that careful habits reduce waste, while some packaging requires changes from shops and manufacturers.","chineseHint":"他们明白好习惯能减少垃圾，而部分包装需要商店和制造商改变。"},
+        {"id":"s7","text":"The family keeps the easy habits and sends their results to the local market manager.","chineseHint":"一家人保留容易做到的习惯，并把结果发给当地市场经理。"}]}
+    ],
+    "vocabulary":[
+      {"word":"single-use","definition":"made to be used once and thrown away","chinese":"一次性的","example":"They avoid single-use plastic."},
+      {"word":"refill","definition":"fill a container again","chinese":"重新装满","example":"They refill bottles."},
+      {"word":"package","definition":"material wrapped around a product","chinese":"包装","example":"The medicine has a package."},
+      {"word":"reduce","definition":"make an amount smaller","chinese":"减少","example":"Habits reduce waste."},
+      {"word":"manufacturers","definition":"companies that make products","chinese":"制造商","example":"Manufacturers can change packaging."}
+    ],
+    "questions":[
+      {"id":"q1","prompt":"How long is the family's challenge?","answerConcepts":["one week"]},
+      {"id":"q2","prompt":"Why do they buy the medicine?","answerConcepts":["health"]},
+      {"id":"q3","prompt":"How many plastic items do they use?","answerConcepts":["six"]}
+    ]
+  },
+  {
+    "id":"debate-club-surprise","title":"The Debate Club Surprise","ageBand":"11-12","cefr":"B1","summary":"Students discover that listening can strengthen an argument.",
+    "paragraphs":[
+      {"id":"p1","sentences":[
+        {"id":"s1","text":"The debate club discusses whether the school should replace printed notices with a digital message board.","chineseHint":"辩论社讨论学校是否应以电子信息板代替纸质通知。"},
+        {"id":"s2","text":"Lena supports the change because it could save paper and update information quickly.","chineseHint":"莉娜支持，因为这样能节省纸张并快速更新信息。"},
+        {"id":"s3","text":"Owen disagrees because some families have limited internet access and students may miss online messages.","chineseHint":"欧文反对，因为一些家庭网络有限，学生可能错过线上消息。"}]},
+      {"id":"p2","sentences":[
+        {"id":"s4","text":"At first, both speakers repeat their own points instead of answering each other.","chineseHint":"起初，两位发言者只重复自己的观点，没有回应对方。"},
+        {"id":"s5","text":"Their coach asks each student to summarize the other side fairly before continuing.","chineseHint":"教练要求每人先公平总结对方观点再继续。"},
+        {"id":"s6","text":"After listening, Lena proposes keeping one printed notice board while adding a digital board for urgent updates.","chineseHint":"听完后，莉娜建议保留一个纸质公告栏，同时用电子板发布紧急更新。"},
+        {"id":"s7","text":"The club is surprised that respectful disagreement produces a practical compromise.","chineseHint":"辩论社惊讶地发现，尊重的分歧带来了实际的折中方案。"}]}
+    ],
+    "vocabulary":[
+      {"word":"debate","definition":"a structured discussion of different views","chinese":"辩论","example":"The club holds a debate."},
+      {"word":"replace","definition":"take the place of something","chinese":"取代","example":"Digital signs may replace paper."},
+      {"word":"limited","definition":"small in amount or availability","chinese":"有限的","example":"Some access is limited."},
+      {"word":"summarize","definition":"state the main ideas briefly","chinese":"总结","example":"They summarize each side."},
+      {"word":"compromise","definition":"an agreement where each side accepts some change","chinese":"折中方案","example":"They find a compromise."}
+    ],
+    "questions":[
+      {"id":"q1","prompt":"Why does Lena support a digital board?","answerConcepts":["save paper"]},
+      {"id":"q2","prompt":"What concern does Owen raise?","answerConcepts":["limited internet"]},
+      {"id":"q3","prompt":"What solution do they reach?","answerConcepts":["printed notice board"]}
+    ]
+  },
+  {
+    "id":"signals-night-sky","title":"Signals from the Night Sky","ageBand":"11-12","cefr":"B1","summary":"A young astronomy group separates evidence from exciting guesses.",
+    "paragraphs":[
+      {"id":"p1","sentences":[
+        {"id":"s1","text":"At an astronomy camp, Zuri's group records a repeating radio signal while observing a distant star.","chineseHint":"天文营中，祖里的小组在观测遥远恒星时记录到重复无线电信号。"},
+        {"id":"s2","text":"The pattern appears every sixteen seconds, and the students excitedly wonder whether it is a message.","chineseHint":"信号每十六秒出现一次，学生兴奋地猜想它是否是一条信息。"},
+        {"id":"s3","text":"Their instructor reminds them that an interesting explanation is not the same as evidence.","chineseHint":"导师提醒他们，有趣的解释不等于证据。"}]},
+      {"id":"p2","sentences":[
+        {"id":"s4","text":"The group compares data from another telescope and checks nearby machines that might cause interference.","chineseHint":"小组比较另一台望远镜的数据，并检查可能造成干扰的附近机器。"},
+        {"id":"s5","text":"They discover that a rotating weather radar sends a pulse every sixteen seconds.","chineseHint":"他们发现旋转气象雷达每十六秒发出一次脉冲。"},
+        {"id":"s6","text":"Although the signal is not from space, the students are proud that careful testing corrected their first guess.","chineseHint":"虽然信号并非来自太空，但学生为严谨测试纠正最初猜想而自豪。"},
+        {"id":"s7","text":"Zuri writes that science becomes stronger when people are willing to change their minds.","chineseHint":"祖里写道，当人愿意改变想法时，科学会更强大。"}]}
+    ],
+    "vocabulary":[
+      {"word":"astronomy","definition":"the study of space, stars, and planets","chinese":"天文学","example":"They attend astronomy camp."},
+      {"word":"signal","definition":"a transmitted sign carrying information","chinese":"信号","example":"The radio signal repeats."},
+      {"word":"evidence","definition":"facts that support or reject an idea","chinese":"证据","example":"A guess needs evidence."},
+      {"word":"interference","definition":"unwanted effects that disturb a signal","chinese":"干扰","example":"Machines may cause interference."},
+      {"word":"pulse","definition":"a short burst of energy or sound","chinese":"脉冲","example":"The radar sends a pulse."}
+    ],
+    "questions":[
+      {"id":"q1","prompt":"How often does the signal repeat?","answerConcepts":["sixteen seconds"]},
+      {"id":"q2","prompt":"What causes the signal?","answerConcepts":["weather radar"]},
+      {"id":"q3","prompt":"What makes science stronger?","answerConcepts":["change their minds"]}
+    ]
+  }
+]

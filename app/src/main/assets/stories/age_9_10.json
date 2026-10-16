@@ -1,0 +1,158 @@
+[
+  {
+    "id":"library-mystery","title":"The Library Mystery","ageBand":"9-10","cefr":"A2","summary":"Two friends follow clues to return a lost bookmark.",
+    "paragraphs":[
+      {"id":"p1","sentences":[
+        {"id":"s1","text":"Eva finds a silver bookmark under a table in the school library.","chineseHint":"伊娃在学校图书馆的桌下发现一枚银色书签。"},
+        {"id":"s2","text":"A tiny drawing of an owl and the number twelve are carved into it.","chineseHint":"上面刻着一只小猫头鹰和数字十二。"},
+        {"id":"s3","text":"Her friend Max thinks the number points to shelf twelve.","chineseHint":"她的朋友马克斯认为数字指向十二号书架。"}]},
+      {"id":"p2","sentences":[
+        {"id":"s4","text":"On shelf twelve, they find a book about birds with a note inside.","chineseHint":"他们在十二号书架找到一本鸟类书，里面有一张纸条。"},
+        {"id":"s5","text":"The note says, Please return my bookmark to Mrs. Green at the front desk.","chineseHint":"纸条写着：请把我的书签交给前台的格林老师。"},
+        {"id":"s6","text":"Mrs. Green thanks them and explains that the bookmark belonged to her first student.","chineseHint":"格林老师感谢他们，并解释书签属于她的第一位学生。"},
+        {"id":"s7","text":"Eva and Max solve the mystery by reading every clue carefully.","chineseHint":"伊娃和马克斯通过仔细阅读每条线索解开了谜团。"}]}
+    ],
+    "vocabulary":[
+      {"word":"bookmark","definition":"a marker that keeps a place in a book","chinese":"书签","example":"Eva finds a bookmark."},
+      {"word":"carved","definition":"cut into a hard surface","chinese":"刻在","example":"An owl is carved into it."},
+      {"word":"shelf","definition":"a flat place where books are stored","chinese":"书架","example":"The book is on a shelf."},
+      {"word":"clue","definition":"information that helps solve a mystery","chinese":"线索","example":"They read every clue."},
+      {"word":"belonged","definition":"was owned by someone","chinese":"属于","example":"It belonged to a student."}
+    ],
+    "questions":[
+      {"id":"q1","prompt":"Where does Eva find the bookmark?","answerConcepts":["table"]},
+      {"id":"q2","prompt":"What does number twelve point to?","answerConcepts":["shelf twelve"]},
+      {"id":"q3","prompt":"Who receives the bookmark?","answerConcepts":["Mrs. Green"]}
+    ]
+  },
+  {
+    "id":"nora-builds-boat","title":"Nora Builds a Boat","ageBand":"9-10","cefr":"A2","summary":"Nora improves a model boat by testing one change at a time.",
+    "paragraphs":[
+      {"id":"p1","sentences":[
+        {"id":"s1","text":"Nora wants to build a small boat for the park pond.","chineseHint":"诺拉想为公园池塘造一艘小船。"},
+        {"id":"s2","text":"She uses a flat piece of wood, a paper sail, and a straight stick.","chineseHint":"她用了平木片、纸帆和一根直木棍。"},
+        {"id":"s3","text":"Her first boat tips over because the tall sail catches too much wind.","chineseHint":"第一艘船翻了，因为高帆接住了太多风。"}]},
+      {"id":"p2","sentences":[
+        {"id":"s4","text":"Nora makes the sail smaller and adds clay under the center of the boat.","chineseHint":"诺拉把帆做小，并在船中央下方加了黏土。"},
+        {"id":"s5","text":"The clay keeps the boat balanced while the sail moves it forward.","chineseHint":"黏土让船保持平衡，船帆推动它前进。"},
+        {"id":"s6","text":"On the third test, the boat crosses the pond without tipping.","chineseHint":"第三次测试时，小船没有翻，顺利穿过池塘。"},
+        {"id":"s7","text":"Nora writes each change in her notebook so she can remember what worked.","chineseHint":"诺拉把每次改动写进笔记本，记住什么方法有效。"}]}
+    ],
+    "vocabulary":[
+      {"word":"pond","definition":"a small body of still water","chinese":"池塘","example":"The boat crosses the pond."},
+      {"word":"sail","definition":"cloth or paper that catches wind to move a boat","chinese":"帆","example":"The sail catches wind."},
+      {"word":"tips","definition":"falls or leans to one side","chinese":"倾翻","example":"The boat tips over."},
+      {"word":"balanced","definition":"steady and not falling","chinese":"平衡的","example":"Clay keeps it balanced."},
+      {"word":"change","definition":"something made different","chinese":"改变","example":"Nora writes each change."}
+    ],
+    "questions":[
+      {"id":"q1","prompt":"Where will Nora use the boat?","answerConcepts":["pond"]},
+      {"id":"q2","prompt":"Why does the first boat tip?","answerConcepts":["too much wind"]},
+      {"id":"q3","prompt":"What helps balance the boat?","answerConcepts":["clay"]}
+    ]
+  },
+  {
+    "id":"bees-rested","title":"The Day the Bees Rested","ageBand":"9-10","cefr":"A2","summary":"A class discovers why a garden needs bees and flowers.",
+    "paragraphs":[
+      {"id":"p1","sentences":[
+        {"id":"s1","text":"The school garden is usually busy with bees, but one Tuesday it is quiet.","chineseHint":"学校花园平时蜜蜂很多，但一个星期二却很安静。"},
+        {"id":"s2","text":"The class notices that gardeners removed many wild flowers near the fence.","chineseHint":"同学们发现园丁移除了篱笆旁的许多野花。"},
+        {"id":"s3","text":"Without enough flowers, the bees cannot find much nectar.","chineseHint":"没有足够的花，蜜蜂找不到多少花蜜。"}]},
+      {"id":"p2","sentences":[
+        {"id":"s4","text":"The students plant lavender, sunflowers, and small blue herbs.","chineseHint":"学生们种下薰衣草、向日葵和蓝色小香草。"},
+        {"id":"s5","text":"They leave a shallow dish of water with stones where bees can land safely.","chineseHint":"他们放了一只带石头的浅水盘，让蜜蜂安全落脚。"},
+        {"id":"s6","text":"Two weeks later, bees return and carry pollen from flower to flower.","chineseHint":"两周后，蜜蜂回来，把花粉从一朵花带到另一朵。"},
+        {"id":"s7","text":"The class learns that a healthy garden needs food, water, and safe places for insects.","chineseHint":"同学们明白健康花园需要昆虫的食物、水和安全空间。"}]}
+    ],
+    "vocabulary":[
+      {"word":"wild","definition":"growing naturally without being planted","chinese":"野生的","example":"Wild flowers grew near the fence."},
+      {"word":"nectar","definition":"sweet liquid made by flowers","chinese":"花蜜","example":"Bees look for nectar."},
+      {"word":"shallow","definition":"not deep","chinese":"浅的","example":"They use a shallow dish."},
+      {"word":"pollen","definition":"fine powder carried between flowers","chinese":"花粉","example":"Bees carry pollen."},
+      {"word":"healthy","definition":"working or growing well","chinese":"健康的","example":"The garden becomes healthy."}
+    ],
+    "questions":[
+      {"id":"q1","prompt":"Why is the garden quiet?","answerConcepts":["flowers"]},
+      {"id":"q2","prompt":"What do students put in the water dish?","answerConcepts":["stones"]},
+      {"id":"q3","prompt":"When do the bees return?","answerConcepts":["Two weeks"]}
+    ]
+  },
+  {
+    "id":"leos-first-market","title":"Leo's First Market","ageBand":"9-10","cefr":"A1","summary":"Leo compares prices and chooses food within a budget.",
+    "paragraphs":[
+      {"id":"p1","sentences":[
+        {"id":"s1","text":"Leo takes ten dollars to the Saturday market for his family.","chineseHint":"利奥带着十美元去周六市场为家人买东西。"},
+        {"id":"s2","text":"His list has bread, tomatoes, and four oranges.","chineseHint":"清单上有面包、西红柿和四个橙子。"},
+        {"id":"s3","text":"One stall sells oranges for one dollar each, but another sells four for three dollars.","chineseHint":"一个摊位橙子一美元一个，另一个四个三美元。"}]},
+      {"id":"p2","sentences":[
+        {"id":"s4","text":"Leo politely asks the second seller if the fruit is fresh.","chineseHint":"利奥礼貌地问第二个卖家水果是否新鲜。"},
+        {"id":"s5","text":"He buys the oranges, bread for two dollars, and tomatoes for three dollars.","chineseHint":"他买了橙子、两美元的面包和三美元的西红柿。"},
+        {"id":"s6","text":"Leo spends eight dollars and brings two dollars home.","chineseHint":"利奥花了八美元，带两美元回家。"},
+        {"id":"s7","text":"His mother praises him for checking the price and speaking kindly.","chineseHint":"妈妈表扬他核对价格并友善交流。"}]}
+    ],
+    "vocabulary":[
+      {"word":"market","definition":"a place where people sell goods","chinese":"市场","example":"Leo visits the market."},
+      {"word":"list","definition":"written items to remember","chinese":"清单","example":"Bread is on the list."},
+      {"word":"stall","definition":"a small stand where goods are sold","chinese":"摊位","example":"The stall sells oranges."},
+      {"word":"fresh","definition":"recently picked or made","chinese":"新鲜的","example":"The fruit is fresh."},
+      {"word":"spends","definition":"uses money to buy something","chinese":"花费","example":"Leo spends eight dollars."}
+    ],
+    "questions":[
+      {"id":"q1","prompt":"How much money does Leo take?","answerConcepts":["ten dollars"]},
+      {"id":"q2","prompt":"Which seller has the better orange price?","answerConcepts":["second seller"]},
+      {"id":"q3","prompt":"How much money does Leo bring home?","answerConcepts":["two dollars"]}
+    ]
+  },
+  {
+    "id":"mountain-message","title":"A Message from the Mountain","ageBand":"9-10","cefr":"A2","summary":"Three hikers use landmarks to deliver an important note.",
+    "paragraphs":[
+      {"id":"p1","sentences":[
+        {"id":"s1","text":"Sam, Rina, and their guide find a note tied to a trail sign.","chineseHint":"山姆、莉娜和向导发现一张绑在路标上的纸条。"},
+        {"id":"s2","text":"It says that a ranger at the north cabin needs a new radio battery.","chineseHint":"纸条说北边小屋的护林员需要一块新无线电电池。"},
+        {"id":"s3","text":"Their map shows two paths, but the shorter western path crosses a flooded bridge.","chineseHint":"地图上有两条路，但较短的西路要经过被淹的桥。"}]},
+      {"id":"p2","sentences":[
+        {"id":"s4","text":"The guide chooses the eastern path beside three tall pine trees.","chineseHint":"向导选择经过三棵高松树旁的东路。"},
+        {"id":"s5","text":"At a gray rock, they turn left and follow the river north.","chineseHint":"到了灰色岩石处，他们左转，沿河向北。"},
+        {"id":"s6","text":"They reach the cabin before sunset and give the ranger the battery.","chineseHint":"他们在日落前到达小屋，把电池交给护林员。"},
+        {"id":"s7","text":"The safe route is longer, but careful directions help everyone arrive.","chineseHint":"安全路线更长，但仔细辨认方向让大家顺利到达。"}]}
+    ],
+    "vocabulary":[
+      {"word":"trail","definition":"a path through natural land","chinese":"小径","example":"The note is on a trail sign."},
+      {"word":"ranger","definition":"a person who protects a park","chinese":"护林员","example":"The ranger needs a battery."},
+      {"word":"flooded","definition":"covered by too much water","chinese":"被水淹的","example":"The bridge is flooded."},
+      {"word":"eastern","definition":"toward the east","chinese":"东边的","example":"They take the eastern path."},
+      {"word":"route","definition":"a way from one place to another","chinese":"路线","example":"The safe route is longer."}
+    ],
+    "questions":[
+      {"id":"q1","prompt":"What does the ranger need?","answerConcepts":["battery"]},
+      {"id":"q2","prompt":"Why do they avoid the western path?","answerConcepts":["flooded bridge"]},
+      {"id":"q3","prompt":"When do they reach the cabin?","answerConcepts":["sunset"]}
+    ]
+  },
+  {
+    "id":"robot-asked-why","title":"The Robot Who Asked Why","ageBand":"9-10","cefr":"A2","summary":"A classroom robot learns that good questions need responsible choices.",
+    "paragraphs":[
+      {"id":"p1","sentences":[
+        {"id":"s1","text":"The class builds a small robot named Dot to sort recycling.","chineseHint":"班级造了一个叫点点的小机器人来分类回收物。"},
+        {"id":"s2","text":"Dot can identify paper, metal, and plastic, but it asks why each item belongs in a bin.","chineseHint":"点点能识别纸、金属和塑料，但会问每件物品为什么属于某个箱。"},
+        {"id":"s3","text":"The students explain that sorting keeps useful materials out of the trash.","chineseHint":"学生解释分类能让有用材料不进入垃圾堆。"}]},
+      {"id":"p2","sentences":[
+        {"id":"s4","text":"One student wants Dot to record every person who makes a mistake.","chineseHint":"一名学生想让点点记录每个犯错的人。"},
+        {"id":"s5","text":"The class decides that watching people is not needed for sorting and could hurt privacy.","chineseHint":"大家认为分类不需要监视人，而且可能伤害隐私。"},
+        {"id":"s6","text":"They program Dot to explain the correct bin without saving anyone's name.","chineseHint":"他们让点点解释正确垃圾箱，但不保存任何人的名字。"},
+        {"id":"s7","text":"Dot keeps asking why, and the questions help the class make better rules.","chineseHint":"点点继续问为什么，这些问题帮助班级制定更好的规则。"}]}
+    ],
+    "vocabulary":[
+      {"word":"sort","definition":"put things into groups","chinese":"分类","example":"Dot can sort recycling."},
+      {"word":"identify","definition":"recognize what something is","chinese":"识别","example":"Dot identifies paper."},
+      {"word":"materials","definition":"substances used to make things","chinese":"材料","example":"Materials can be useful."},
+      {"word":"privacy","definition":"control over personal information","chinese":"隐私","example":"The class protects privacy."},
+      {"word":"program","definition":"give a computer instructions","chinese":"编程","example":"They program Dot."}
+    ],
+    "questions":[
+      {"id":"q1","prompt":"What job does Dot do?","answerConcepts":["sort recycling"]},
+      {"id":"q2","prompt":"What information does Dot not save?","answerConcepts":["name"]},
+      {"id":"q3","prompt":"What do Dot's questions improve?","answerConcepts":["rules"]}
+    ]
+  }
+]
