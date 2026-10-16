@@ -48,6 +48,14 @@ class OpenAiTutorClientTest {
         assertNull(server.takeRequest().getHeader("Authorization"))
     }
 
+    @Test fun reservesEnoughOutputTokensForQwenThinkingResponse() = runTest {
+        server.enqueue(MockResponse().setResponseCode(200).setBody(successBody("OK")))
+
+        client().connectionTest()
+
+        assertTrue(server.takeRequest().body.readUtf8().contains("\"max_tokens\":512"))
+    }
+
     @Test fun mapsAuthenticationAndMalformedResponse() = runTest {
         server.enqueue(MockResponse().setResponseCode(401))
         server.enqueue(MockResponse().setResponseCode(200).setBody("{\"choices\":[]}"))

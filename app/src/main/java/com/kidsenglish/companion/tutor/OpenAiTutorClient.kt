@@ -53,7 +53,9 @@ class OpenAiTutorClient(
         val payload = ChatCompletionRequest(
             model = connection.modelName.ifBlank { "qwen3:4b" },
             messages = messages.map { TransportMessage(it.role.wireValue, it.content) },
-            maxTokens = maxTokens,
+            // Qwen thinking variants spend completion tokens on hidden reasoning
+            // before emitting message.content. Keep enough room for a final answer.
+            maxTokens = maxTokens.coerceAtLeast(MIN_COMPLETION_TOKENS),
         )
 
         repeat(2) { attempt ->
@@ -106,5 +108,6 @@ class OpenAiTutorClient(
     companion object {
         private val JSON_MEDIA_TYPE = "application/json; charset=utf-8".toMediaType()
         private val RETRYABLE_CODES = setOf(502, 503, 504)
+        private const val MIN_COMPLETION_TOKENS = 512
     }
 }
