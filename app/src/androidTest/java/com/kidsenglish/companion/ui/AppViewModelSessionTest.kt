@@ -17,6 +17,7 @@ import com.kidsenglish.companion.model.AgeBand
 import com.kidsenglish.companion.speech.SpeechController
 import com.kidsenglish.companion.speech.SpeechStyle
 import com.kidsenglish.companion.speech.TtsPreference
+import com.kidsenglish.companion.speech.UtteranceCallbackRouter
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.CompletableDeferred
@@ -417,20 +418,25 @@ class AppViewModelSessionTest {
         data class Playback(val onDone: () -> Unit, val onError: (String) -> Unit)
         val recognitions = mutableListOf<Recognition>()
         val playbacks = mutableListOf<Playback>()
+        private val utteranceCallbacks = UtteranceCallbackRouter()
 
         override fun startListening(onResult: (String) -> Unit, onError: (String) -> Unit) {
             recognitions += Recognition(onResult, onError)
         }
 
         override fun speak(text: String, rate: Float, style: SpeechStyle, onDone: () -> Unit, onError: (String) -> Unit) {
-            playbacks += Playback(onDone, onError)
+            val utteranceId = utteranceCallbacks.register(onDone, onError)
+            playbacks += Playback(
+                onDone = { utteranceCallbacks.onDone(utteranceId) },
+                onError = { utteranceCallbacks.onError(utteranceId, it) },
+            )
         }
 
-        // Retain callback handles after stop/shutdown to simulate delayed platform deliveries.
+        // Retain event handles after stop; TTS events pass through the production identity router.
         override fun stopListening() = Unit
-        override fun stopSpeaking() = Unit
+        override fun stopSpeaking() = utteranceCallbacks.clear()
         override fun setTtsPreference(preference: TtsPreference) = Unit
-        override fun shutdown() = Unit
+        override fun shutdown() = utteranceCallbacks.clear()
     }
 
     private class HeldConversationClient : ConversationClient {

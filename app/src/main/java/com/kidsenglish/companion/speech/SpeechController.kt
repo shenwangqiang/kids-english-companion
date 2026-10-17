@@ -74,8 +74,7 @@ enum class SpeechStyle(val pitch: Float, private val minimumRate: Float) {
 class AndroidSpeechController(private val context: Context) : SpeechController {
     private var ttsReady = false
     private var tts: TextToSpeech? = null
-    private var speechDone: () -> Unit = {}
-    private var speechError: (String) -> Unit = {}
+    private val utteranceCallbacks = UtteranceCallbackRouter()
     private var ttsPreference: TtsPreference? = null
     private var initializationGeneration = 0
 
@@ -91,16 +90,16 @@ class AndroidSpeechController(private val context: Context) : SpeechController {
         onDone: () -> Unit,
         onError: (String) -> Unit,
     ) {
-        if (!ttsReady || text.isBlank()) {
+        val currentTts = tts
+        if (!ttsReady || currentTts == null || text.isBlank()) {
             onError(context.getString(R.string.tts_not_ready))
             return
         }
-        speechDone = onDone
-        speechError = onError
-        tts?.stop()
-        tts?.setPitch(style.pitch)
-        tts?.setSpeechRate(style.resolveRate(rate))
-        tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "story-speech")
+        stopSpeaking()
+        val utteranceId = utteranceCallbacks.register(onDone, onError)
+        currentTts.setPitch(style.pitch)
+        currentTts.setSpeechRate(style.resolveRate(rate))
+        currentTts.speak(text, TextToSpeech.QUEUE_FLUSH, null, utteranceId)
     }
 
     override fun startListening(onResult: (String) -> Unit, onError: (String) -> Unit) {
@@ -169,8 +168,7 @@ class AndroidSpeechController(private val context: Context) : SpeechController {
     }
 
     override fun stopSpeaking() {
-        speechDone = {}
-        speechError = {}
+        utteranceCallbacks.clear()
         tts?.stop()
     }
 
@@ -180,6 +178,7 @@ class AndroidSpeechController(private val context: Context) : SpeechController {
         ttsReady = false
         initializationGeneration += 1
         val generation = initializationGeneration
+        utteranceCallbacks.clear()
         tts?.shutdown()
         tts = null
         initializeCandidate(
@@ -228,10 +227,10 @@ class AndroidSpeechController(private val context: Context) : SpeechController {
         ttsReady = true
         readyTts.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
             override fun onStart(utteranceId: String?) = Unit
-            override fun onDone(utteranceId: String?) = speechDone()
+            override fun onDone(utteranceId: String?) = utteranceCallbacks.onDone(utteranceId)
             @Deprecated("Deprecated in Java")
-            override fun onError(utteranceId: String?) = speechError(context.getString(R.string.tts_stopped))
-            override fun onError(utteranceId: String?, errorCode: Int) = speechError(context.getString(R.string.tts_stopped))
+            override fun onError(utteranceId: String?) = utteranceCallbacks.onError(utteranceId, context.getString(R.string.tts_stopped))
+            override fun onError(utteranceId: String?, errorCode: Int) = utteranceCallbacks.onError(utteranceId, context.getString(R.string.tts_stopped))
         })
     }
 
