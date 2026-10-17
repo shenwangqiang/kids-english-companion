@@ -38,7 +38,7 @@ interface ProgressDao {
 
 @Database(
     entities = [LearningProgressEntity::class, ConversationSessionEntity::class, ConversationTurnEntity::class],
-    version = 2,
+    version = 3,
     exportSchema = false,
 )
 abstract class ProgressDatabase : RoomDatabase() {

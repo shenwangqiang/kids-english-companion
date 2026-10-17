@@ -28,7 +28,7 @@ class AppContainer(context: Context) {
     val settingsRepository = AppSettingsRepository(context)
     val secureTokenStore = SecureTokenStore(context)
     private val database = Room.databaseBuilder(context, ProgressDatabase::class.java, BuildContract.DATABASE_NAME)
-        .addMigrations(MIGRATION_1_2)
+        .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
         .build()
     val progressRepository = ProgressRepository(database.progressDao())
     val conversationRepository = ConversationRepository(database.conversationDao())
@@ -65,6 +65,14 @@ class AppContainer(context: Context) {
     )
 
     companion object {
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE conversation_sessions ADD COLUMN topicId TEXT NOT NULL DEFAULT 'general'")
+                db.execSQL("ALTER TABLE conversation_sessions ADD COLUMN topicTitle TEXT NOT NULL DEFAULT 'General Conversation'")
+                db.execSQL("ALTER TABLE conversation_sessions ADD COLUMN title TEXT NOT NULL DEFAULT ''")
+            }
+        }
+
         val MIGRATION_1_2 = object : Migration(1, 2) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL(
