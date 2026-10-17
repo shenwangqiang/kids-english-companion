@@ -1,5 +1,6 @@
 package com.kidsenglish.companion.ui
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -8,6 +9,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
@@ -35,18 +37,23 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kidsenglish.companion.R
 import com.kidsenglish.companion.conversation.ConversationRole
+import com.kidsenglish.companion.conversation.ConversationTopicCatalog
 import com.kidsenglish.companion.conversation.VoicePhase
 import com.kidsenglish.companion.model.AgeBand
 import com.kidsenglish.companion.speech.TtsPreference
 import com.kidsenglish.companion.tutor.ChatRole
+import java.text.DateFormat
+import java.util.Date
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -69,8 +76,9 @@ fun KidsEnglishApp(
     ) { padding ->
         when (state.screen) {
             AppScreen.WELCOME -> WelcomeScreen(Modifier.padding(padding), viewModel::chooseAgeBand)
-            // Task 4 replaces the topic/history placeholders with their dedicated screens.
-            AppScreen.CONVERSATION, AppScreen.TOPICS, AppScreen.HISTORY -> ConversationScreen(
+            AppScreen.TOPICS -> TopicPickerScreen(Modifier.padding(padding), viewModel)
+            AppScreen.HISTORY -> ConversationHistoryScreen(Modifier.padding(padding), state, viewModel)
+            AppScreen.CONVERSATION -> ConversationScreen(
                 Modifier.padding(padding),
                 state,
                 viewModel,
@@ -99,6 +107,87 @@ private fun WelcomeScreen(modifier: Modifier, onChoose: (AgeBand) -> Unit) {
 }
 
 @Composable
+private fun TopicPickerScreen(modifier: Modifier, viewModel: AppViewModel) {
+    var showCustomTopic by rememberSaveable { mutableStateOf(false) }
+    var customInput by rememberSaveable { mutableStateOf("") }
+    val customTopic = ConversationTopicCatalog.custom(customInput)
+    LazyColumn(
+        modifier.fillMaxSize().imePadding().testTag("topic_list").padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        item {
+            Text(stringResource(R.string.choose_topic), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+        }
+        items(ConversationTopicCatalog.predefined, key = { it.id }) { topic ->
+            Button(
+                onClick = { viewModel.createConversation(topic) },
+                modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
+            ) {
+                Text(topic.title, style = MaterialTheme.typography.titleMedium)
+            }
+        }
+        item {
+            OutlinedButton(
+                onClick = { showCustomTopic = true },
+                modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
+            ) {
+                Text(stringResource(R.string.custom_topic))
+            }
+        }
+        if (showCustomTopic) {
+            item {
+                OutlinedTextField(
+                    value = customInput,
+                    onValueChange = { customInput = it.take(60) },
+                    label = { Text(stringResource(R.string.custom_topic_input)) },
+                    supportingText = { Text("${customInput.length}/60") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth().testTag("custom_topic_input"),
+                )
+            }
+            item {
+                Button(
+                    onClick = { customTopic?.let(viewModel::createConversation) },
+                    enabled = customTopic != null,
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
+                ) {
+                    Text(stringResource(R.string.start_topic))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ConversationHistoryScreen(modifier: Modifier, state: AppUiState, viewModel: AppViewModel) {
+    val dateFormat = remember { DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT) }
+    LazyColumn(
+        modifier.fillMaxSize().padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        item {
+            Text(stringResource(R.string.conversation_history), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+        }
+        if (state.conversationHistory.isEmpty()) {
+            item { Text(stringResource(R.string.conversation_history_empty)) }
+        }
+        items(state.conversationHistory, key = { it.sessionId }) { session ->
+            Card(
+                onClick = { viewModel.openConversation(session.sessionId) },
+                modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
+            ) {
+                Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text(session.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                    Text(session.topic.title)
+                    Text(dateFormat.format(Date(session.updatedAt)), style = MaterialTheme.typography.bodySmall)
+                    Text(session.preview.ifBlank { stringResource(R.string.conversation_preview_empty) })
+                }
+            }
+        }
+    }
+}
+
+@Composable
 private fun ConversationScreen(
     modifier: Modifier,
     state: AppUiState,
@@ -108,7 +197,7 @@ private fun ConversationScreen(
 ) {
     var input by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
-    LaunchedEffect(state.conversationTurns.size) {
+    LaunchedEffect(state.activeSessionId, state.conversationTurns.size) {
         if (state.conversationTurns.isNotEmpty()) {
             listState.animateScrollToItem(state.conversationTurns.size)
         }
@@ -116,13 +205,22 @@ private fun ConversationScreen(
     Column(modifier.fillMaxSize().imePadding().padding(horizontal = 16.dp, vertical = 8.dp)) {
         LazyColumn(
             state = listState,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(1f).testTag("conversation_list"),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             item(key = "conversation-header") {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(stringResource(R.string.conversation_title), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                    Text(state.activeTopic.title, style = MaterialTheme.typography.titleMedium, modifier = Modifier.testTag("conversation_topic"))
                     Text(stringResource(R.string.conversation_subtitle, state.selectedAgeBand.localizedLabel()))
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(onClick = viewModel::showTopicPicker, modifier = Modifier.weight(1f).heightIn(min = 56.dp)) {
+                            Text(stringResource(R.string.new_conversation))
+                        }
+                        OutlinedButton(onClick = viewModel::showConversationHistory, modifier = Modifier.weight(1f).heightIn(min = 56.dp)) {
+                            Text(stringResource(R.string.conversation_history))
+                        }
+                    }
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
                         TextButton(onClick = viewModel::showLibrary) { Text(stringResource(R.string.stories)) }
                         TextButton(onClick = viewModel::showProgress) { Text(stringResource(R.string.progress)) }
@@ -165,6 +263,7 @@ private fun ConversationScreen(
                             }
                         }
                     }
+                    Text(stringResource(R.string.replay_hint), style = MaterialTheme.typography.bodySmall)
                 }
             }
             if (state.conversationTurns.isEmpty()) {
@@ -172,11 +271,20 @@ private fun ConversationScreen(
             }
             items(state.conversationTurns) { turn ->
                 val speaker = if (turn.role == ConversationRole.USER) stringResource(R.string.speaker_user) else stringResource(R.string.speaker_coach)
+                val replayLabel = stringResource(R.string.replay_message)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = if (turn.role == ConversationRole.USER) Arrangement.End else Arrangement.Start,
                 ) {
-                    Card(Modifier.widthIn(max = 320.dp)) {
+                    Card(
+                        Modifier.widthIn(min = 72.dp, max = 320.dp).heightIn(min = 56.dp).clickable(
+                            role = Role.Button,
+                            onClickLabel = replayLabel,
+                        ) {
+                            if (state.voiceSession.isActive) stopVoiceConversation()
+                            viewModel.replayConversationMessage(turn.content)
+                        },
+                    ) {
                         Column(Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
                             Text(speaker, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
                             Text(turn.content)

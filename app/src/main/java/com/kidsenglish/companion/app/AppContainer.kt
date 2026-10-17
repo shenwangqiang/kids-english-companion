@@ -9,6 +9,7 @@ import com.kidsenglish.companion.BuildContract
 import com.kidsenglish.companion.content.AssetStoryRepository
 import com.kidsenglish.companion.conversation.ConversationConnection
 import com.kidsenglish.companion.conversation.ConversationRepository
+import com.kidsenglish.companion.conversation.ConversationReplayController
 import com.kidsenglish.companion.conversation.OllamaConversationClient
 import com.kidsenglish.companion.domain.PassageRetriever
 import com.kidsenglish.companion.progress.ProgressDatabase
@@ -33,6 +34,7 @@ class AppContainer(context: Context) {
     val progressRepository = ProgressRepository(database.progressDao())
     val conversationRepository = ConversationRepository(database.conversationDao())
     val speechController = AndroidSpeechController(context)
+    val conversationReplayController = ConversationReplayController(speechController)
     private val passageRetriever = PassageRetriever()
     private val httpClient = OkHttpClient.Builder()
         .connectTimeout(10, TimeUnit.SECONDS)

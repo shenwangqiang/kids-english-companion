@@ -1,24 +1,38 @@
 package com.kidsenglish.companion.ui
 
+import android.Manifest
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
-import android.Manifest
+import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTextReplacement
 import androidx.test.platform.app.InstrumentationRegistry
 import com.kidsenglish.companion.KidsEnglishApplication
 import com.kidsenglish.companion.MainActivity
+import com.kidsenglish.companion.conversation.ConversationOutcome
 import com.kidsenglish.companion.conversation.ConversationTopicCatalog
 import com.kidsenglish.companion.model.AgeBand
 import com.kidsenglish.companion.settings.AppSettingsRepository
 import com.kidsenglish.companion.speech.TtsPreference
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -29,17 +43,113 @@ class LearningFlowTest {
     @Before fun resetModelConnection() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         runBlocking {
+            AppSettingsRepository(context).setAgeBand(AgeBand.AGE_6_8)
             AppSettingsRepository(context).setBaseUrl("")
             AppSettingsRepository(context).setAllowDebugHttp(false)
             AppSettingsRepository(context).setModelName("qwen3.5:9b")
             AppSettingsRepository(context).setTtsPreference(TtsPreference.AUTO)
+            AppSettingsRepository(context).setSpeechRate(0.9f)
             val repository = (context.applicationContext as KidsEnglishApplication).container.conversationRepository
-            repository.observeHistory(AgeBand.AGE_6_8).first().forEach { repository.clear(it.sessionId) }
+            AgeBand.entries.forEach { band ->
+                repository.observeHistory(band).first().forEach { repository.clear(it.sessionId) }
+                AppSettingsRepository(context).setActiveSessionId(band, "missing-${band.wireValue}")
+            }
             val sessionId = repository.createSession(AgeBand.AGE_6_8, ConversationTopicCatalog.general)
             AppSettingsRepository(context).setActiveSessionId(AgeBand.AGE_6_8, sessionId)
         }
         compose.activityRule.scenario.recreate()
         compose.waitForIdle()
+    }
+
+    @Test fun newConversationShowsCatalogAndOpensSelectedTopic() {
+        compose.onNodeWithText("6–8 岁").performClick()
+        compose.onNodeWithText("新建对话").performClick()
+        compose.onNodeWithText("选择今天想聊的话题").assertIsDisplayed()
+        listOf("How to Train Your Dragon", "Harry Potter", "Space", "Dinosaurs", "Animals", "School Life", "自定义话题")
+            .forEach { title ->
+                compose.onNodeWithTag("topic_list").performScrollToNode(hasText(title))
+                compose.onNodeWithText(title).assertIsDisplayed()
+            }
+        compose.onNodeWithTag("topic_list").performScrollToNode(hasText("Space"))
+        compose.onNodeWithText("Space").performClick()
+        compose.onNodeWithTag("conversation_topic").assertIsDisplayed()
+        compose.onNodeWithText("Space").assertIsDisplayed()
+        compose.onNodeWithText("输入英语消息").assertIsDisplayed()
+    }
+
+    @Test fun historyShowsNewestFirstAndReopensOnlySelectedSession() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        runBlocking {
+            val repository = (context.applicationContext as KidsEnglishApplication).container.conversationRepository
+            val older = repository.createSession(AgeBand.AGE_6_8, ConversationTopicCatalog.predefined[2])
+            repository.appendUserTurn(older, "Older space conversation")
+            repository.applyOutcome(older, ConversationOutcome("The Moon is near Earth.", "", "", emptyList()))
+            delay(10)
+            val newer = repository.createSession(AgeBand.AGE_6_8, ConversationTopicCatalog.predefined[4])
+            repository.appendUserTurn(newer, "Newer animal conversation")
+            repository.applyOutcome(newer, ConversationOutcome("Otters can swim.", "", "", emptyList()))
+            AppSettingsRepository(context).setActiveSessionId(AgeBand.AGE_6_8, newer)
+        }
+        compose.activityRule.scenario.recreate()
+        compose.onNodeWithText("6–8 岁").performClick()
+        compose.onNodeWithTag("conversation_list").performScrollToNode(hasText("历史对话"))
+        compose.onNodeWithText("历史对话").performClick()
+        val newer = compose.onNodeWithText("Newer animal conversation").assertIsDisplayed().fetchSemanticsNode()
+        val older = compose.onNodeWithText("Older space conversation").assertIsDisplayed().fetchSemanticsNode()
+        assertTrue("Newest session must appear first", newer.boundsInRoot.top < older.boundsInRoot.top)
+        compose.onNodeWithText("Space").assertIsDisplayed()
+        compose.onNodeWithText("The Moon is near Earth.").assertIsDisplayed()
+        compose.onNodeWithText("Older space conversation").performClick()
+        compose.waitUntil(timeoutMillis = 10_000) {
+            compose.onAllNodesWithTag("conversation_list").fetchSemanticsNodes().isNotEmpty() &&
+                compose.onAllNodesWithText("The Moon is near Earth.").fetchSemanticsNodes().isNotEmpty()
+        }
+        compose.onNodeWithText("The Moon is near Earth.").assertIsDisplayed()
+        compose.onNodeWithText("Otters can swim.").assertDoesNotExist()
+        compose.onNodeWithText("Newer animal conversation").assertDoesNotExist()
+    }
+
+    @Test fun customTopicRequiresNonblankInputAndBoundsTitleToSixtyCharacters() {
+        compose.onNodeWithText("6–8 岁").performClick()
+        compose.onNodeWithText("新建对话").performClick()
+        compose.onNodeWithTag("topic_list").performScrollToNode(hasText("自定义话题"))
+        compose.onNodeWithText("自定义话题").performClick()
+        compose.onNodeWithTag("topic_list").performScrollToNode(hasText("开始聊这个话题"))
+        compose.onNodeWithText("开始聊这个话题").assertIsNotEnabled()
+        compose.onNodeWithTag("custom_topic_input").performTextInput("   ")
+        compose.onNodeWithText("开始聊这个话题").assertIsNotEnabled()
+        compose.onNodeWithTag("custom_topic_input").performTextReplacement("A".repeat(61))
+        compose.onNodeWithText("60/60").assertIsDisplayed()
+        compose.onNodeWithText("开始聊这个话题").assertIsEnabled().performClick()
+        compose.onNodeWithText("A".repeat(60)).assertIsDisplayed()
+        compose.onNodeWithText("输入英语消息").assertIsDisplayed()
+    }
+
+    @Test fun tappingEitherMessageReplaysWithoutStartingVoiceConversation() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        runBlocking {
+            val repository = (context.applicationContext as KidsEnglishApplication).container.conversationRepository
+            val sessionId = AppSettingsRepository(context).activeSessionId(AgeBand.AGE_6_8).first()!!
+            repository.appendUserTurn(sessionId, "I can see a rocket.")
+            repository.applyOutcome(sessionId, ConversationOutcome("Hello, explorer!", "", "", emptyList()))
+        }
+        compose.activityRule.scenario.recreate()
+        compose.onNodeWithText("6–8 岁").performClick()
+
+        compose.onNodeWithText("Hello, explorer!").assertHasClickAction()
+        listOf("I can see a rocket.", "Hello, explorer!").forEach { message ->
+            compose.onNodeWithTag("conversation_list").performScrollToNode(hasText(message))
+            compose.onNodeWithText(message)
+                .assertHasClickAction()
+                .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button))
+                .performClick()
+            compose.onNodeWithText(message).assertIsDisplayed()
+            compose.onNodeWithText("输入英语消息").assertIsDisplayed()
+        }
+        compose.onNodeWithTag("conversation_list").performScrollToNode(hasText("开始语音对话"))
+        compose.onNodeWithText("开始语音对话").assertIsDisplayed()
+        compose.onNodeWithText("结束语音对话").assertDoesNotExist()
+        compose.onNodeWithText("点击英文消息可重新朗读").assertIsDisplayed()
     }
 
     @Test fun chooseBandOpensConversationFirst() {

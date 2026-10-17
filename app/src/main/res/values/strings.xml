@@ -8,6 +8,16 @@
     <string name="age_11_12">11–12 岁</string>
     <string name="conversation_title">开始对话</string>
     <string name="conversation_subtitle">%1$s · 英语对话教练</string>
+    <string name="new_conversation">新建对话</string>
+    <string name="conversation_history">历史对话</string>
+    <string name="choose_topic">选择今天想聊的话题</string>
+    <string name="custom_topic">自定义话题</string>
+    <string name="custom_topic_input">想聊的话题</string>
+    <string name="start_topic">开始聊这个话题</string>
+    <string name="conversation_history_empty">还没有历史对话，选一个话题开始聊吧。</string>
+    <string name="conversation_preview_empty">还没有消息</string>
+    <string name="replay_hint">点击英文消息可重新朗读</string>
+    <string name="replay_message">重新朗读</string>
     <string name="stories">英语故事</string>
     <string name="progress">学习进度</string>
     <string name="settings">设置</string>

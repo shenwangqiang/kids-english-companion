@@ -8,6 +8,7 @@ import com.kidsenglish.companion.R
 import com.kidsenglish.companion.conversation.ConversationClient
 import com.kidsenglish.companion.conversation.ConversationMemory
 import com.kidsenglish.companion.conversation.ConversationRequest
+import com.kidsenglish.companion.conversation.ConversationReplayController
 import com.kidsenglish.companion.conversation.ConversationResult
 import com.kidsenglish.companion.conversation.ConversationSessionSummary
 import com.kidsenglish.companion.conversation.ConversationTopic
@@ -80,11 +81,13 @@ class AppViewModel internal constructor(
     application: Application,
     private val speechController: SpeechController,
     private val conversationClient: ConversationClient,
+    private val conversationReplayController: ConversationReplayController = ConversationReplayController(speechController),
 ) : AndroidViewModel(application) {
     constructor(application: Application) : this(
         application,
         (application as KidsEnglishApplication).container.speechController,
         application.container.conversationClient,
+        application.container.conversationReplayController,
     )
 
     private val container = (application as KidsEnglishApplication).container
@@ -215,6 +218,15 @@ class AppViewModel internal constructor(
     fun showConversationHistory() {
         navigator.showHistory()
         _uiState.update { it.copy(screen = navigator.screen) }
+    }
+
+    fun replayConversationMessage(text: String) {
+        val state = _uiState.value
+        conversationReplayController.replay(text, state.settings.speechRate) { message ->
+            _uiState.update {
+                if (it.activeSessionId == state.activeSessionId) it.copy(conversationStatus = message) else it
+            }
+        }
     }
 
     fun openConversation(sessionId: String) {
