@@ -70,6 +70,23 @@ class ConversationPromptTest {
     }
 
     @Test
+    fun ordinaryTopicGuidesConversationWithoutBrandedBookBoundaries() {
+        val system = ConversationPrompt.messages(
+            ConversationRequest(
+                ageBand = AgeBand.AGE_9_10,
+                childMessage = "I saw Saturn.",
+                topic = ConversationTopicCatalog.predefined.first { it.id == "space" },
+            ),
+        ).first().content
+
+        assertTrue(system.contains("Space"))
+        assertTrue(system.contains("Stay on this topic unless the child clearly changes it"))
+        assertFalse(system.contains("does not contain the book"))
+        assertFalse(system.contains("Do not quote long passages"))
+        assertFalse(system.contains("do not reconstruct chapters"))
+    }
+
+    @Test
     fun openingRequestProducesOneTopicQuestionWithoutAChildTurn() {
         val messages = ConversationPrompt.messages(
             ConversationRequest(

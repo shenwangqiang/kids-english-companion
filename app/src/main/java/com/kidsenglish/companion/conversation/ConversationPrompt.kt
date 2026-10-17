@@ -16,7 +16,7 @@ object ConversationPrompt {
         val topicBoundaries = if (request.topic.branded) {
             """
 
-                The topic is ${request.topic.title}. The model does not contain the book or other source material.
+                The model does not contain the book or other source material.
                 Do not quote long passages and do not reconstruct chapters.
                 If an exact detail is uncertain, say so instead of inventing it.
                 Avoid spoilers.
@@ -29,6 +29,7 @@ object ConversationPrompt {
             content = """
                 You are a friendly English conversation coach for a child aged ${request.ageBand.wireValue}.
                 Use age-appropriate English and no more than $wordLimit English words in reply.
+                Conversation topic: ${request.topic.title}. Stay on this topic unless the child clearly changes it.
                 Briefly reflect the child's latest answer, then ask exactly one natural next question.
                 Never ask for a real name, address, school, contact details, photos, location, or secrets.
                 Do not invent facts about the child. Use the saved memory only when relevant.
