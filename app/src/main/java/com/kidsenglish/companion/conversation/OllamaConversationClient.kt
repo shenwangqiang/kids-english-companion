@@ -2,6 +2,8 @@ package com.kidsenglish.companion.conversation
 
 import com.kidsenglish.companion.model.AgeBand
 import com.kidsenglish.companion.settings.EndpointPolicy
+import com.kidsenglish.companion.tutor.PolicyDecision
+import com.kidsenglish.companion.tutor.TutorPolicy
 import java.io.IOException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -24,6 +26,10 @@ class OllamaConversationClient(
     },
 ) : ConversationClient {
     override suspend fun chat(request: ConversationRequest): ConversationResult {
+        if (TutorPolicy.validateInput(request.topic.title) is PolicyDecision.Blocked ||
+            (!request.opening && TutorPolicy.validateInput(request.childMessage) is PolicyDecision.Blocked)) {
+            return ConversationResult.Blocked
+        }
         val messages = ConversationPrompt.messages(request)
         val first = send(messages, maxTokens(request.ageBand))
         if (first !is RawResult.Success) return first.toConversationResult()

@@ -34,6 +34,7 @@ sealed interface ConversationResult {
     data class AuthenticationRequired(val message: String = "Model authentication is required.") : ConversationResult
     data class Unavailable(val message: String = "Conversation service is offline.") : ConversationResult
     data class InvalidResponse(val message: String = "The conversation model returned an invalid response.") : ConversationResult
+    data object Blocked : ConversationResult
 }
 
 sealed interface ModelDiscoveryResult {

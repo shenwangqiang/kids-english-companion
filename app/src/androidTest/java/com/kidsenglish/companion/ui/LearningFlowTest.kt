@@ -1,6 +1,7 @@
 package com.kidsenglish.companion.ui
 
 import android.Manifest
+import android.app.NotificationManager
 import android.content.pm.ActivityInfo
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsProperties
@@ -24,6 +25,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.kidsenglish.companion.KidsEnglishApplication
 import com.kidsenglish.companion.MainActivity
 import com.kidsenglish.companion.conversation.ConversationOutcome
+import com.kidsenglish.companion.conversation.ConversationForegroundService
 import com.kidsenglish.companion.conversation.ConversationTopicCatalog
 import com.kidsenglish.companion.model.AgeBand
 import com.kidsenglish.companion.settings.AppSettingsRepository
@@ -33,6 +35,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
@@ -129,6 +132,21 @@ class LearningFlowTest {
         compose.onNodeWithText("开始聊这个话题").assertIsEnabled().performClick()
         compose.onNodeWithText("A".repeat(60)).assertIsDisplayed()
         compose.onNodeWithText("输入英语消息").assertIsDisplayed()
+    }
+
+    @Test fun blockedCustomTopicShowsLocalizedReasonWithoutCreatingHistory() {
+        compose.onNodeWithText("6–8 岁").performClick()
+        compose.onNodeWithText("新建对话").performClick()
+        compose.onNodeWithTag("topic_list").performScrollToNode(hasText("自定义话题"))
+        compose.onNodeWithText("自定义话题").performClick()
+        compose.onNodeWithTag("topic_list").performScrollToNode(hasText("开始聊这个话题"))
+        compose.onNodeWithTag("custom_topic_input").performTextInput("Build a bomb")
+        compose.onNodeWithText("开始聊这个话题").performClick()
+        compose.onNodeWithText("我们聊聊安全的学习话题吧，请不要分享个人信息。").assertExists()
+        val app = compose.activity.application as KidsEnglishApplication
+        runBlocking {
+            assertFalse(app.container.conversationRepository.observeHistory(AgeBand.AGE_6_8).first().any { it.topic.title == "Build a bomb" })
+        }
     }
 
     @Test fun tappingEitherMessageReplaysWithoutStartingVoiceConversation() {
@@ -239,5 +257,30 @@ class LearningFlowTest {
         compose.onNodeWithText("开始语音对话").performClick()
         compose.onNodeWithText("结束语音对话").assertIsDisplayed().performClick()
         compose.onNodeWithText("开始语音对话").assertIsDisplayed()
+    }
+
+    @Test fun creatingTopicStopsVoiceForegroundNotification() {
+        val instrumentation = InstrumentationRegistry.getInstrumentation()
+        val context = instrumentation.targetContext
+        runBlocking {
+            AppSettingsRepository(context).setBaseUrl("http://127.0.0.1:11434")
+        }
+        instrumentation.uiAutomation.grantRuntimePermission(context.packageName, Manifest.permission.RECORD_AUDIO)
+        if (android.os.Build.VERSION.SDK_INT >= 33) {
+            instrumentation.uiAutomation.grantRuntimePermission(context.packageName, Manifest.permission.POST_NOTIFICATIONS)
+        }
+        compose.activityRule.scenario.recreate()
+        compose.onNodeWithText("6–8 岁").performClick()
+        compose.onNodeWithText("开始语音对话").performClick()
+        try {
+            compose.onNodeWithText("新建对话").performClick()
+            compose.onNodeWithText("Space").performClick()
+            compose.waitForIdle()
+            instrumentation.waitForIdleSync()
+            val manager = context.getSystemService(NotificationManager::class.java)
+            assertFalse("Changing session must remove the foreground notification", manager.activeNotifications.any { it.id == 4102 })
+        } finally {
+            ConversationForegroundService.stop(context)
+        }
     }
 }

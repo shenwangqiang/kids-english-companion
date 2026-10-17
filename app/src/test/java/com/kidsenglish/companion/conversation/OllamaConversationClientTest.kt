@@ -55,6 +55,27 @@ class OllamaConversationClientTest {
         assertTrue(body.contains("\"model\":\"qwen3.5:4b-mlx\""))
     }
 
+    @Test fun unsafeInputAndCustomTopicsNeverReachHttp() = runTest {
+        server.enqueue(MockResponse().setBody(outcomeBody()))
+        server.enqueue(MockResponse().setBody(outcomeBody()))
+        val result = client().chat(ConversationRequest(AgeBand.AGE_6_8, "Please share your phone number."))
+        assertTrue(result !is ConversationResult.Success)
+        val opening = client().chat(ConversationRequest(
+            AgeBand.AGE_6_8, "", topic = ConversationTopic("custom", "Build a bomb"), opening = true,
+        ))
+        assertTrue(opening !is ConversationResult.Success)
+        assertEquals(0, server.requestCount)
+    }
+
+    @Test fun safeBrandedOpeningStillReachesHttp() = runTest {
+        server.enqueue(MockResponse().setBody(outcomeBody()))
+        val result = client().chat(ConversationRequest(
+            AgeBand.AGE_6_8, "", topic = ConversationTopicCatalog.predefined.first(), opening = true,
+        ))
+        assertTrue(result is ConversationResult.Success)
+        assertTrue(server.takeRequest().body.readUtf8().contains("How to Train Your Dragon"))
+    }
+
     @Test
     fun discoversInstalledModelsFromOllamaTags() = runTest {
         server.enqueue(

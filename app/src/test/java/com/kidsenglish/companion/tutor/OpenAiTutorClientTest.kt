@@ -73,7 +73,15 @@ class OpenAiTutorClientTest {
         assertTrue(client.chat(request) is TutorResult.Unavailable)
     }
 
-    private fun client(token: String = "", readTimeoutMs: Long = 2_000): OpenAiTutorClient {
+    @Test fun rootAndLegacyBaseUrlsUseOllamaOpenAiEndpoint() = runTest {
+        for (path in listOf("/", "/v1", "/v1/")) {
+            server.enqueue(MockResponse().setBody(successBody("Ready")))
+            assertTrue(client(basePath = path).chat(request) is TutorResult.Success)
+            assertEquals("/v1/chat/completions", server.takeRequest().path)
+        }
+    }
+
+    private fun client(token: String = "", readTimeoutMs: Long = 2_000, basePath: String = "/v1"): OpenAiTutorClient {
         val http = OkHttpClient.Builder()
             .connectTimeout(1, TimeUnit.SECONDS)
             .readTimeout(readTimeoutMs, TimeUnit.MILLISECONDS)
@@ -84,7 +92,7 @@ class OpenAiTutorClientTest {
             promptBuilder = PromptBuilder(PassageRetriever()),
             connectionProvider = {
                 ModelConnection(
-                    baseUrl = server.url("/v1").toString(),
+                    baseUrl = server.url(basePath).toString(),
                     modelName = "qwen3:4b",
                     token = token,
                     allowDebugHttp = true,

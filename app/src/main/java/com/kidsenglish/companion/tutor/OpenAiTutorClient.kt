@@ -49,7 +49,8 @@ class OpenAiTutorClient(
         if (!EndpointPolicy.isAllowed(connection.baseUrl, isDebug, connection.allowDebugHttp)) {
             return@withContext TutorResult.Unavailable("Model endpoint is not allowed.")
         }
-        val endpoint = connection.baseUrl.trimEnd('/') + "/chat/completions"
+        val root = connection.baseUrl.trim().trimEnd('/').removeSuffix("/v1")
+        val endpoint = "$root/v1/chat/completions"
         val payload = ChatCompletionRequest(
             model = connection.modelName.ifBlank { "qwen3:4b" },
             messages = messages.map { TransportMessage(it.role.wireValue, it.content) },

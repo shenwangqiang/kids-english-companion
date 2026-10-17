@@ -76,7 +76,7 @@ fun KidsEnglishApp(
     ) { padding ->
         when (state.screen) {
             AppScreen.WELCOME -> WelcomeScreen(Modifier.padding(padding), viewModel::chooseAgeBand)
-            AppScreen.TOPICS -> TopicPickerScreen(Modifier.padding(padding), viewModel)
+            AppScreen.TOPICS -> TopicPickerScreen(Modifier.padding(padding), viewModel, state.conversationStatus)
             AppScreen.HISTORY -> ConversationHistoryScreen(Modifier.padding(padding), state, viewModel)
             AppScreen.CONVERSATION -> ConversationScreen(
                 Modifier.padding(padding),
@@ -107,7 +107,7 @@ private fun WelcomeScreen(modifier: Modifier, onChoose: (AgeBand) -> Unit) {
 }
 
 @Composable
-private fun TopicPickerScreen(modifier: Modifier, viewModel: AppViewModel) {
+private fun TopicPickerScreen(modifier: Modifier, viewModel: AppViewModel, status: String) {
     var showCustomTopic by rememberSaveable { mutableStateOf(false) }
     var customInput by rememberSaveable { mutableStateOf("") }
     val customTopic = ConversationTopicCatalog.custom(customInput)
@@ -146,6 +146,7 @@ private fun TopicPickerScreen(modifier: Modifier, viewModel: AppViewModel) {
                 )
             }
             item {
+                if (status.isNotBlank()) Text(status, color = MaterialTheme.colorScheme.error)
                 Button(
                     onClick = { customTopic?.let(viewModel::createConversation) },
                     enabled = customTopic != null,
@@ -249,7 +250,7 @@ private fun ConversationScreen(
                             }
                         }
                     } else {
-                        OutlinedButton(onClick = requestVoiceMicrophone, modifier = Modifier.fillMaxWidth()) {
+                        OutlinedButton(onClick = requestVoiceMicrophone, enabled = !state.conversationLoading, modifier = Modifier.fillMaxWidth()) {
                             Text(stringResource(R.string.start_voice))
                         }
                     }

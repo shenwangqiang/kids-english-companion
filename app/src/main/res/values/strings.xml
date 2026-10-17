@@ -1,4 +1,5 @@
 <resources>
+    <string name="child_input_blocked">我们聊聊安全的学习话题吧，请不要分享个人信息。</string>
     <string name="app_name">儿童英语伴读</string>
     <string name="back">返回</string>
     <string name="welcome_title">阅读、倾听、开口说、主动问</string>

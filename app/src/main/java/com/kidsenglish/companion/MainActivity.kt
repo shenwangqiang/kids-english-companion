@@ -14,10 +14,12 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
 import com.kidsenglish.companion.conversation.ConversationForegroundService
 import com.kidsenglish.companion.ui.AppViewModel
 import com.kidsenglish.companion.ui.KidsEnglishApp
 import com.kidsenglish.companion.ui.theme.KidsEnglishTheme
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     private val viewModel: AppViewModel by viewModels()
@@ -35,6 +37,9 @@ class MainActivity : ComponentActivity() {
             IntentFilter(ConversationForegroundService.ACTION_STOP_VOICE),
             ContextCompat.RECEIVER_NOT_EXPORTED,
         )
+        lifecycleScope.launch {
+            viewModel.voiceResourcesActive.collect(::updateVoiceResources)
+        }
         val practiceMicrophonePermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
             if (granted) viewModel.startListening()
         }
@@ -81,16 +86,16 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun startVoiceSession() {
-        if (viewModel.startVoiceConversation()) {
-            updateShowWhenLocked(true)
-            ConversationForegroundService.start(this)
-        }
+        viewModel.startVoiceConversation()
     }
 
     private fun stopVoiceSession() {
         viewModel.stopVoiceConversation()
-        ConversationForegroundService.stop(this)
-        updateShowWhenLocked(false)
+    }
+
+    private fun updateVoiceResources(active: Boolean) {
+        updateShowWhenLocked(active)
+        if (active) ConversationForegroundService.start(this) else ConversationForegroundService.stop(this)
     }
 
     private fun updateShowWhenLocked(enabled: Boolean) {
@@ -108,7 +113,7 @@ class MainActivity : ComponentActivity() {
     override fun onDestroy() {
         if (isFinishing) {
             viewModel.stopVoiceConversation()
-            ConversationForegroundService.stop(this)
+            updateVoiceResources(false)
         }
         unregisterReceiver(stopVoiceReceiver)
         super.onDestroy()

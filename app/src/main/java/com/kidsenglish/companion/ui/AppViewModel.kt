@@ -35,6 +35,11 @@ import com.kidsenglish.companion.tutor.ChatMessage
 import com.kidsenglish.companion.tutor.ChatRole
 import com.kidsenglish.companion.tutor.TutorRequest
 import com.kidsenglish.companion.tutor.TutorResult
+import com.kidsenglish.companion.tutor.TutorClient
+import com.kidsenglish.companion.tutor.TutorPolicy
+import com.kidsenglish.companion.tutor.PolicyDecision
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -82,6 +87,7 @@ class AppViewModel internal constructor(
     private val speechController: SpeechController,
     private val conversationClient: ConversationClient,
     private val conversationReplayController: ConversationReplayController = ConversationReplayController(speechController),
+    private val tutorClient: TutorClient = (application as KidsEnglishApplication).container.tutorClient,
 ) : AndroidViewModel(application) {
     constructor(application: Application) : this(
         application,
@@ -92,16 +98,30 @@ class AppViewModel internal constructor(
 
     private val container = (application as KidsEnglishApplication).container
     private val navigator = LearningNavigator()
-    private val pendingConversationSessions = mutableSetOf<String>()
+    // All entry points reserve a session synchronously on Main, before any suspension.
+    private val conversationOperations = mutableMapOf<String, ConversationOperation>()
+    private val clearingSessions = mutableSetOf<String>()
     private var voiceOperationGeneration = 0L
     private var voiceOperation: VoiceOperation? = null
+    private var tutorGeneration = 0L
+    private var practiceOperation: PracticeOperation? = null
     private val _uiState = MutableStateFlow(AppUiState())
     val uiState: StateFlow<AppUiState> = _uiState.asStateFlow()
+    // Activity observes this even while stopped, so lock-screen voice may continue.
+    // ERROR keeps retry controls visible but releases microphone-service/window resources.
+    val voiceResourcesActive = uiState.map {
+        it.voiceSession.phase in setOf(VoicePhase.LISTENING, VoicePhase.THINKING, VoicePhase.SPEAKING)
+    }.distinctUntilChanged()
 
     init {
         viewModelScope.launch {
             container.settingsRepository.settings.collect { settings ->
-                if (_uiState.value.selectedAgeBand != settings.ageBand) stopVoiceConversation()
+                if (_uiState.value.selectedAgeBand != settings.ageBand) {
+                    stopVoiceConversation()
+                    invalidatePractice()
+                    resetTutorScope()
+                    _uiState.update { it.copy(currentStory = null) }
+                }
                 _uiState.update {
                     it.copy(
                         settings = settings,
@@ -144,7 +164,7 @@ class AppViewModel internal constructor(
                             activeTopic = snapshot.topic,
                             conversationTurns = snapshot.turns,
                             conversationMemory = snapshot.memory,
-                            conversationLoading = snapshot.sessionId in pendingConversationSessions,
+                            conversationLoading = isConversationBusy(snapshot.sessionId),
                         )
                     }
                 }
@@ -174,6 +194,8 @@ class AppViewModel internal constructor(
     }
 
     fun chooseAgeBand(ageBand: AgeBand) {
+        invalidatePractice()
+        resetTutorScope()
         if (_uiState.value.selectedAgeBand != ageBand) stopVoiceConversation()
         navigator.showConversation()
         _uiState.update {
@@ -196,6 +218,7 @@ class AppViewModel internal constructor(
     }
 
     fun showConversation() {
+        invalidatePractice()
         navigator.showConversation()
         _uiState.update {
             it.copy(
@@ -206,16 +229,19 @@ class AppViewModel internal constructor(
     }
 
     fun showLibrary() {
+        invalidatePractice()
         navigator.showLibrary()
         _uiState.update { it.copy(screen = navigator.screen) }
     }
 
     fun showTopicPicker() {
+        invalidatePractice()
         navigator.showTopicPicker()
-        _uiState.update { it.copy(screen = navigator.screen) }
+        _uiState.update { it.copy(screen = navigator.screen, conversationStatus = "") }
     }
 
     fun showConversationHistory() {
+        invalidatePractice()
         navigator.showHistory()
         _uiState.update { it.copy(screen = navigator.screen) }
     }
@@ -242,28 +268,24 @@ class AppViewModel internal constructor(
     }
 
     fun createConversation(topic: ConversationTopic) {
+        if (TutorPolicy.validateInput(topic.title) is PolicyDecision.Blocked) {
+            conversationFailure(text(R.string.child_input_blocked))
+            return
+        }
         val ageBand = _uiState.value.selectedAgeBand
         stopVoiceConversation()
         viewModelScope.launch {
             val sessionId = container.conversationRepository.createSession(ageBand, topic)
-            pendingConversationSessions += sessionId
-            container.settingsRepository.setActiveSessionId(ageBand, sessionId)
-            val snapshot = container.conversationRepository.observe(sessionId).first()
-            if (_uiState.value.selectedAgeBand == ageBand) showConversation()
-            _uiState.update {
-                if (it.activeSessionId == sessionId) it.copy(conversationLoading = true, conversationStatus = "") else it
+            val operation = beginConversationOperation(sessionId) ?: return@launch
+            try {
+                container.settingsRepository.setActiveSessionId(ageBand, sessionId)
+                if (_uiState.value.selectedAgeBand == ageBand) showConversation()
+                requestConversation(operation, ageBand, "", opening = true)?.let {
+                    showConversationResult(sessionId, it)
+                }
+            } finally {
+                finishConversationOperation(operation)
             }
-            val result = conversationClient.chat(
-                ConversationRequest(
-                    ageBand = ageBand,
-                    childMessage = "",
-                    history = snapshot.turns,
-                    memory = snapshot.memory,
-                    topic = snapshot.topic,
-                    opening = true,
-                ),
-            )
-            applyConversationResult(sessionId, result)
         }
     }
 
@@ -271,46 +293,97 @@ class AppViewModel internal constructor(
         val state = _uiState.value
         val sessionId = state.activeSessionId ?: return
         val normalized = message.trim()
-        if (normalized.isBlank() || normalized.length > 500 || state.conversationLoading) return
+        if (TutorPolicy.validateInput(normalized) is PolicyDecision.Blocked) {
+            conversationFailure(sessionId, text(R.string.child_input_blocked))
+            return
+        }
         if (state.settings.baseUrl.isBlank()) {
             _uiState.update { it.copy(conversationStatus = text(R.string.conversation_offline)) }
             return
         }
-        pendingConversationSessions += sessionId
-        _uiState.update { it.copy(conversationLoading = true, conversationStatus = "") }
+        val operation = beginConversationOperation(sessionId) ?: return
         viewModelScope.launch {
-            container.conversationRepository.appendUserTurn(sessionId, normalized)
-            val result = conversationClient.chat(
-                ConversationRequest(
-                    ageBand = state.selectedAgeBand,
-                    childMessage = normalized,
-                    history = state.conversationTurns,
-                    memory = state.conversationMemory,
-                    topic = state.activeTopic,
-                ),
-            )
-            applyConversationResult(sessionId, result)
+            try {
+                requestConversation(operation, state.selectedAgeBand, normalized)?.let {
+                    showConversationResult(sessionId, it)
+                }
+            } finally {
+                finishConversationOperation(operation)
+            }
         }
     }
 
-    private suspend fun applyConversationResult(sessionId: String, result: ConversationResult) {
-        pendingConversationSessions -= sessionId
+    private class ConversationOperation(val sessionId: String) {
+        var running = false
+        val finished = CompletableDeferred<Unit>()
+    }
+
+    private fun isConversationBusy(sessionId: String) = sessionId in conversationOperations || sessionId in clearingSessions
+
+    private fun beginConversationOperation(sessionId: String): ConversationOperation? {
+        if (isConversationBusy(sessionId)) return null
+        val operation = ConversationOperation(sessionId)
+        conversationOperations[sessionId] = operation
+        _uiState.update {
+            if (it.activeSessionId == sessionId) it.copy(conversationLoading = true, conversationStatus = "") else it
+        }
+        return operation
+    }
+
+    private fun finishConversationOperation(operation: ConversationOperation) {
+        if (conversationOperations[operation.sessionId] === operation) conversationOperations.remove(operation.sessionId)
+        operation.finished.complete(Unit)
+        _uiState.update {
+            if (it.activeSessionId == operation.sessionId) it.copy(conversationLoading = isConversationBusy(operation.sessionId)) else it
+        }
+    }
+
+    private suspend fun requestConversation(
+        operation: ConversationOperation,
+        ageBand: AgeBand,
+        message: String,
+        opening: Boolean = false,
+        isCurrent: () -> Boolean = { true },
+    ): ConversationResult? {
+        val repository = container.conversationRepository
+        val sessionId = operation.sessionId
+        fun canApply() = isCurrent() && sessionId !in clearingSessions
+        operation.running = true
+        return try {
+            if (!canApply() || !repository.sessionExists(sessionId)) return null
+            // Read after acquiring the gate; UI/Room collectors may still display the previous memory.
+            val snapshot = repository.observe(sessionId).first()
+            if (!canApply()) return null
+            if (!opening) repository.appendUserTurn(sessionId, message)
+            if (!canApply()) return null
+            val result = conversationClient.chat(ConversationRequest(
+                ageBand, message, snapshot.turns, snapshot.memory, snapshot.topic, opening,
+            ))
+            if (!canApply()) return null
+            if (result is ConversationResult.Success) repository.applyOutcome(sessionId, result.outcome)
+            if (canApply()) result else null
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (_: Exception) {
+            if (canApply()) ConversationResult.Unavailable() else null
+        } finally {
+            operation.running = false
+        }
+    }
+
+    private fun showConversationResult(sessionId: String, result: ConversationResult) {
         when (result) {
-            is ConversationResult.Success -> {
-                if (container.conversationRepository.sessionExists(sessionId)) {
-                    container.conversationRepository.applyOutcome(sessionId, result.outcome)
-                }
-                _uiState.update { if (it.activeSessionId == sessionId) it.copy(conversationLoading = false) else it }
-            }
+            is ConversationResult.Success -> Unit
             is ConversationResult.AuthenticationRequired -> conversationFailure(sessionId, text(R.string.authentication_required))
             is ConversationResult.Unavailable -> conversationFailure(sessionId, text(R.string.conversation_offline_period))
             is ConversationResult.InvalidResponse -> conversationFailure(sessionId, text(R.string.invalid_conversation_response))
+            is ConversationResult.Blocked -> conversationFailure(sessionId, text(R.string.child_input_blocked))
         }
     }
 
     private fun conversationFailure(sessionId: String, message: String) {
         _uiState.update {
-            if (it.activeSessionId == sessionId) it.copy(conversationLoading = false, conversationStatus = message) else it
+            if (it.activeSessionId == sessionId) it.copy(conversationStatus = message) else it
         }
     }
 
@@ -318,11 +391,17 @@ class AppViewModel internal constructor(
         val state = _uiState.value
         val sessionId = state.activeSessionId ?: return
         stopVoiceConversation()
+        if (!clearingSessions.add(sessionId)) return
         viewModelScope.launch {
-            container.conversationRepository.clear(sessionId)
-            resolveActiveSession(state.selectedAgeBand, null)
-            _uiState.update {
-                if (it.selectedAgeBand == state.selectedAgeBand) it.copy(conversationStatus = text(R.string.conversation_cleared)) else it
+            try {
+                conversationOperations[sessionId]?.finished?.await()
+                container.conversationRepository.clear(sessionId)
+                resolveActiveSession(state.selectedAgeBand, null)
+                _uiState.update {
+                    if (it.selectedAgeBand == state.selectedAgeBand) it.copy(conversationStatus = text(R.string.conversation_cleared)) else it
+                }
+            } finally {
+                clearingSessions -= sessionId
             }
         }
     }
@@ -331,10 +410,12 @@ class AppViewModel internal constructor(
         val state = _uiState.value
         if (state.activeSessionId == null) return false
         if (state.voiceSession.isActive) return true
+        if (isConversationBusy(state.activeSessionId)) return false
         if (state.settings.baseUrl.isBlank()) {
             conversationFailure(text(R.string.conversation_offline_period))
             return false
         }
+        invalidatePractice()
         updateVoice(VoiceEvent.Start)
         listenForVoiceTurn()
         return true
@@ -342,6 +423,8 @@ class AppViewModel internal constructor(
 
     fun retryVoiceConversation() {
         invalidateVoiceOperation()
+        val sessionId = _uiState.value.activeSessionId ?: return
+        if (isConversationBusy(sessionId)) return
         updateVoice(VoiceEvent.Retry)
         listenForVoiceTurn()
     }
@@ -351,13 +434,16 @@ class AppViewModel internal constructor(
     }
 
     fun stopVoiceConversation() {
+        invalidatePractice()
         invalidateVoiceOperation()
         updateVoice(VoiceEvent.Stop)
     }
 
     private fun invalidateVoiceOperation() {
         voiceOperationGeneration++
+        val previous = voiceOperation
         voiceOperation = null
+        if (previous != null && !previous.lease.running) finishConversationOperation(previous.lease)
         speechController.stopListening()
         speechController.stopSpeaking()
     }
@@ -366,9 +452,7 @@ class AppViewModel internal constructor(
         val generation: Long,
         val sessionId: String,
         val ageBand: AgeBand,
-        val topic: ConversationTopic,
-        val history: List<ConversationTurn>,
-        val memory: ConversationMemory,
+        val lease: ConversationOperation,
         val speechRate: Float,
     )
 
@@ -385,14 +469,16 @@ class AppViewModel internal constructor(
             stopVoiceConversation()
             return
         }
+        val lease = beginConversationOperation(sessionId) ?: run {
+            stopVoiceConversation()
+            return
+        }
         val operation = VoiceOperation(
             // Retries and consecutive turns also need distinct identities within the same session.
             generation = ++voiceOperationGeneration,
             sessionId = sessionId,
             ageBand = state.selectedAgeBand,
-            topic = state.activeTopic,
-            history = state.conversationTurns,
-            memory = state.conversationMemory,
+            lease = lease,
             speechRate = state.settings.speechRate,
         )
         voiceOperation = operation
@@ -402,14 +488,19 @@ class AppViewModel internal constructor(
                     if (!isCurrentVoiceOperation(operation) || _uiState.value.voiceSession.phase != VoicePhase.LISTENING) {
                         return@launch
                     }
-                    updateVoice(VoiceEvent.Heard(recognized))
-                    sendVoiceTurn(operation, recognized)
+                    val normalized = recognized.trim()
+                    if (TutorPolicy.validateInput(normalized) is PolicyDecision.Blocked) {
+                        failVoice(text(R.string.child_input_blocked))
+                    } else {
+                        updateVoice(VoiceEvent.Heard(normalized))
+                        sendVoiceTurn(operation, normalized)
+                    }
                 }
             },
             onError = { message ->
                 viewModelScope.launch {
                     if (isCurrentVoiceOperation(operation) && _uiState.value.voiceSession.phase == VoicePhase.LISTENING) {
-                        updateVoice(VoiceEvent.Failure(message))
+                        failVoice(message)
                     }
                 }
             },
@@ -418,25 +509,14 @@ class AppViewModel internal constructor(
 
     private suspend fun sendVoiceTurn(operation: VoiceOperation, message: String) {
         if (!isCurrentVoiceOperation(operation)) return
-        container.conversationRepository.appendUserTurn(operation.sessionId, message)
-        if (!isCurrentVoiceOperation(operation)) return
-        val result = conversationClient.chat(
-            ConversationRequest(
-                ageBand = operation.ageBand,
-                childMessage = message,
-                history = operation.history,
-                memory = operation.memory,
-                topic = operation.topic,
-            ),
-        )
+        val result = try {
+            requestConversation(operation.lease, operation.ageBand, message) { isCurrentVoiceOperation(operation) }
+        } finally {
+            if (!isCurrentVoiceOperation(operation)) finishConversationOperation(operation.lease)
+        }
         if (!isCurrentVoiceOperation(operation)) return
         when (result) {
             is ConversationResult.Success -> {
-                if (!container.conversationRepository.sessionExists(operation.sessionId) || !isCurrentVoiceOperation(operation)) {
-                    return
-                }
-                container.conversationRepository.applyOutcome(operation.sessionId, result.outcome)
-                if (!isCurrentVoiceOperation(operation)) return
                 updateVoice(VoiceEvent.ReplyReady(result.outcome.reply))
                 speechController.speak(
                     result.outcome.reply,
@@ -445,6 +525,7 @@ class AppViewModel internal constructor(
                     onDone = {
                         viewModelScope.launch {
                             if (isCurrentVoiceOperation(operation) && _uiState.value.voiceSession.phase == VoicePhase.SPEAKING) {
+                                finishConversationOperation(operation.lease)
                                 updateVoice(VoiceEvent.SpeechFinished)
                                 listenForVoiceTurn()
                             }
@@ -452,15 +533,22 @@ class AppViewModel internal constructor(
                     },
                     onError = { message ->
                         viewModelScope.launch {
-                            if (isCurrentVoiceOperation(operation)) updateVoice(VoiceEvent.Failure(message))
+                            if (isCurrentVoiceOperation(operation)) failVoice(message)
                         }
                     },
                 )
             }
-            is ConversationResult.AuthenticationRequired -> updateVoice(VoiceEvent.Failure(text(R.string.authentication_required)))
-            is ConversationResult.Unavailable -> updateVoice(VoiceEvent.Failure(text(R.string.conversation_offline_period)))
-            is ConversationResult.InvalidResponse -> updateVoice(VoiceEvent.Failure(text(R.string.invalid_conversation_response)))
+            is ConversationResult.AuthenticationRequired -> failVoice(text(R.string.authentication_required))
+            is ConversationResult.Unavailable -> failVoice(text(R.string.conversation_offline_period))
+            is ConversationResult.InvalidResponse -> failVoice(text(R.string.invalid_conversation_response))
+            is ConversationResult.Blocked -> failVoice(text(R.string.child_input_blocked))
+            null -> stopVoiceConversation()
         }
+    }
+
+    private fun failVoice(message: String) {
+        invalidateVoiceOperation()
+        updateVoice(VoiceEvent.Failure(message))
     }
 
     private fun updateVoice(event: VoiceEvent) {
@@ -468,10 +556,12 @@ class AppViewModel internal constructor(
     }
 
     private fun conversationFailure(message: String) {
-        _uiState.update { it.copy(conversationLoading = false, conversationStatus = message) }
+        _uiState.update { it.copy(conversationStatus = message) }
     }
 
     fun openStory(story: Story) {
+        invalidatePractice()
+        if (_uiState.value.currentStory?.id != story.id) resetTutorScope()
         navigator.showReader()
         _uiState.update {
             it.copy(screen = navigator.screen, currentStory = story, sentenceIndex = 0, speakingFeedback = null)
@@ -483,6 +573,7 @@ class AppViewModel internal constructor(
     fun previousSentence() = moveSentence(-1)
 
     private fun moveSentence(delta: Int) {
+        invalidatePractice()
         _uiState.update { state ->
             val last = (state.sentences.size - 1).coerceAtLeast(0)
             state.copy(sentenceIndex = (state.sentenceIndex + delta).coerceIn(0, last), speakingFeedback = null)
@@ -495,37 +586,65 @@ class AppViewModel internal constructor(
     }
 
     fun showPractice() {
+        stopVoiceConversation()
+        invalidatePractice()
         navigator.showPractice()
         _uiState.update { it.copy(screen = navigator.screen, speakingFeedback = null) }
     }
 
     fun startListening() {
-        if (_uiState.value.isListening) return
+        val state = _uiState.value
+        if (state.isListening || state.screen != AppScreen.PRACTICE) return
+        val story = state.currentStory ?: return
+        val target = state.currentSentence?.text?.takeIf { it.isNotBlank() } ?: return
+        val operation = PracticeOperation(state.selectedAgeBand, story.id, state.sentenceIndex, target)
+        practiceOperation = operation
         _uiState.update { it.copy(isListening = true, speakingFeedback = null) }
         speechController.startListening(
             onResult = { recognized ->
-                val state = _uiState.value
-                val target = state.currentSentence?.text.orEmpty()
-                if (target.isNotBlank()) {
-                    val feedback = SpeakingScore.compare(target, recognized)
+                viewModelScope.launch {
+                    if (!isCurrentPractice(operation)) return@launch
+                    invalidatePractice()
+                    val feedback = SpeakingScore.compare(operation.target, recognized)
                     _uiState.update { it.copy(isListening = false, speakingFeedback = feedback) }
-                    state.currentStory?.let { story ->
-                        viewModelScope.launch { container.progressRepository.recordSpeakingAttempt(story.id, feedback.percent) }
-                    }
+                    container.progressRepository.recordSpeakingAttempt(operation.storyId, feedback.percent)
                 }
             },
             onError = { message ->
-                _uiState.update {
-                    it.copy(
-                        isListening = false,
-                        speakingFeedback = SpeakingFeedback(0, message, emptyList(), emptyList(), emptyList()),
-                    )
+                viewModelScope.launch {
+                    if (!isCurrentPractice(operation)) return@launch
+                    invalidatePractice()
+                    _uiState.update {
+                        it.copy(speakingFeedback = SpeakingFeedback(0, message, emptyList(), emptyList(), emptyList()))
+                    }
                 }
             },
         )
     }
 
+    private data class PracticeOperation(val ageBand: AgeBand, val storyId: String, val sentenceIndex: Int, val target: String)
+
+    private fun isCurrentPractice(operation: PracticeOperation): Boolean {
+        val state = _uiState.value
+        return practiceOperation === operation && state.selectedAgeBand == operation.ageBand &&
+            state.currentStory?.id == operation.storyId && state.sentenceIndex == operation.sentenceIndex &&
+            state.screen == AppScreen.PRACTICE
+    }
+
+    private fun invalidatePractice() {
+        val wasListening = practiceOperation != null
+        practiceOperation = null
+        _uiState.update { it.copy(isListening = false) }
+        if (wasListening) speechController.stopListening()
+    }
+
+    private fun resetTutorScope() {
+        tutorGeneration++
+        _uiState.update { it.copy(tutorMessages = emptyList(), tutorLoading = false, tutorStatus = "") }
+    }
+
     fun showTutor() {
+        invalidatePractice()
         navigator.showTutor()
         val offline = _uiState.value.settings.baseUrl.isBlank()
         _uiState.update { it.copy(screen = navigator.screen, tutorStatus = if (offline) text(R.string.tutor_offline) else "") }
@@ -535,14 +654,19 @@ class AppViewModel internal constructor(
         val state = _uiState.value
         val story = state.currentStory ?: return
         if (message.isBlank() || message.length > 500 || state.tutorLoading) return
+        if (TutorPolicy.validateInput(message) is PolicyDecision.Blocked) {
+            tutorFailure(text(R.string.child_input_blocked))
+            return
+        }
         if (state.settings.baseUrl.isBlank()) {
             _uiState.update { it.copy(tutorStatus = text(R.string.tutor_offline)) }
             return
         }
         val userMessage = ChatMessage(ChatRole.USER, message.trim())
+        val generation = tutorGeneration
         _uiState.update { it.copy(tutorMessages = it.tutorMessages + userMessage, tutorLoading = true, tutorStatus = "") }
         viewModelScope.launch {
-            val result = container.tutorClient.chat(
+            val result = tutorClient.chat(
                 TutorRequest(
                     ageBand = state.selectedAgeBand,
                     story = story,
@@ -551,6 +675,8 @@ class AppViewModel internal constructor(
                     history = state.tutorMessages,
                 ),
             )
+            if (generation != tutorGeneration || _uiState.value.currentStory?.id != story.id ||
+                _uiState.value.selectedAgeBand != state.selectedAgeBand) return@launch
             when (result) {
                 is TutorResult.Success -> _uiState.update {
                     it.copy(
@@ -577,11 +703,13 @@ class AppViewModel internal constructor(
     }
 
     fun showProgress() {
+        invalidatePractice()
         navigator.showProgress()
         _uiState.update { it.copy(screen = navigator.screen) }
     }
 
     fun showSettings() {
+        invalidatePractice()
         navigator.showSettings()
         _uiState.update { it.copy(screen = navigator.screen, connectionStatus = "") }
         refreshModels()
@@ -667,17 +795,21 @@ class AppViewModel internal constructor(
                 is ConversationResult.AuthenticationRequired -> text(R.string.authentication_required)
                 is ConversationResult.Unavailable -> text(R.string.conversation_offline_period)
                 is ConversationResult.InvalidResponse -> text(R.string.invalid_conversation_response)
+                is ConversationResult.Blocked -> text(R.string.child_input_blocked)
             }
             _uiState.update { it.copy(connectionStatus = status) }
         }
     }
 
     fun back() {
+        invalidatePractice()
         navigator.back()
         _uiState.update { it.copy(screen = navigator.screen) }
     }
 
     override fun onCleared() {
+        invalidatePractice()
+        resetTutorScope()
         stopVoiceConversation()
         speechController.shutdown()
         super.onCleared()

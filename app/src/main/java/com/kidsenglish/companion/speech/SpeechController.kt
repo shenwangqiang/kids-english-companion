@@ -6,6 +6,8 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.RecognitionService
@@ -71,9 +73,15 @@ enum class SpeechStyle(val pitch: Float, private val minimumRate: Float) {
     fun resolveRate(selectedRate: Float): Float = selectedRate.coerceIn(minimumRate, 1.2f)
 }
 
-class AndroidSpeechController(private val context: Context) : SpeechController {
+class AndroidSpeechController internal constructor(
+    private val context: Context,
+    private val ttsFactory: (String?, (Int) -> Unit) -> TtsOutput,
+    private val engineCatalog: (() -> List<TtsEngine>)? = null,
+) : SpeechController {
+    constructor(context: Context) : this(context, { engine, onInit -> AndroidTtsOutput(context, engine, onInit) })
+    private val mainHandler = Handler(Looper.getMainLooper())
     private var ttsReady = false
-    private var tts: TextToSpeech? = null
+    private var tts: TtsOutput? = null
     private val utteranceCallbacks = UtteranceCallbackRouter()
     private var ttsPreference: TtsPreference? = null
     private var initializationGeneration = 0
@@ -97,9 +105,9 @@ class AndroidSpeechController(private val context: Context) : SpeechController {
         }
         stopSpeaking()
         val utteranceId = utteranceCallbacks.register(onDone, onError)
-        currentTts.setPitch(style.pitch)
-        currentTts.setSpeechRate(style.resolveRate(rate))
-        currentTts.speak(text, TextToSpeech.QUEUE_FLUSH, null, utteranceId)
+        if (!currentTts.speak(text, style.resolveRate(rate), style.pitch, utteranceId)) {
+            utteranceCallbacks.onError(utteranceId, context.getString(R.string.tts_stopped))
+        }
     }
 
     override fun startListening(onResult: (String) -> Unit, onError: (String) -> Unit) {
@@ -173,7 +181,7 @@ class AndroidSpeechController(private val context: Context) : SpeechController {
     }
 
     override fun setTtsPreference(preference: TtsPreference) {
-        if (ttsPreference == preference) return
+        if (ttsPreference == preference && tts != null) return
         ttsPreference = preference
         ttsReady = false
         initializationGeneration += 1
@@ -182,7 +190,7 @@ class AndroidSpeechController(private val context: Context) : SpeechController {
         tts?.shutdown()
         tts = null
         initializeCandidate(
-            candidates = TtsEngineSelector.candidates(preference, installedTtsEngines()),
+            candidates = TtsEngineSelector.candidates(preference, engineCatalog?.invoke() ?: installedTtsEngines()),
             index = 0,
             generation = generation,
         )
@@ -191,21 +199,18 @@ class AndroidSpeechController(private val context: Context) : SpeechController {
     private fun initializeCandidate(candidates: List<String?>, index: Int, generation: Int) {
         if (generation != initializationGeneration || index >= candidates.size) return
         val enginePackage = candidates[index]
-        var candidate: TextToSpeech? = null
-        candidate = if (enginePackage == null) {
-            TextToSpeech(context) { status ->
+        var candidate: TtsOutput? = null
+        candidate = ttsFactory(enginePackage) { status ->
+            // Serialize binder callbacks with shutdown/preferences and allow even synchronous factories.
+            mainHandler.post {
                 onTtsInitialized(candidate, status, candidates, index, generation)
             }
-        } else {
-            TextToSpeech(context, { status ->
-                onTtsInitialized(candidate, status, candidates, index, generation)
-            }, enginePackage)
         }
         tts = candidate
     }
 
     private fun onTtsInitialized(
-        candidate: TextToSpeech?,
+        candidate: TtsOutput?,
         status: Int,
         candidates: List<String?>,
         index: Int,
@@ -216,8 +221,7 @@ class AndroidSpeechController(private val context: Context) : SpeechController {
             return
         }
         val readyTts = candidate
-        val languageStatus = if (status == TextToSpeech.SUCCESS) readyTts?.setLanguage(Locale.US) else null
-        if (status != TextToSpeech.SUCCESS || readyTts == null || languageStatus == null || languageStatus < TextToSpeech.LANG_AVAILABLE) {
+        if (status != TextToSpeech.SUCCESS || readyTts == null || !readyTts.configureEnglish()) {
             candidate?.shutdown()
             if (tts === candidate) tts = null
             initializeCandidate(candidates, index + 1, generation)
@@ -225,7 +229,7 @@ class AndroidSpeechController(private val context: Context) : SpeechController {
         }
         tts = readyTts
         ttsReady = true
-        readyTts.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+        readyTts.setListener(object : UtteranceProgressListener() {
             override fun onStart(utteranceId: String?) = Unit
             override fun onDone(utteranceId: String?) = utteranceCallbacks.onDone(utteranceId)
             @Deprecated("Deprecated in Java")
@@ -247,6 +251,8 @@ class AndroidSpeechController(private val context: Context) : SpeechController {
     }
 
     override fun shutdown() {
+        initializationGeneration += 1
+        ttsPreference = null
         stopListening()
         stopSpeaking()
         tts?.shutdown()
