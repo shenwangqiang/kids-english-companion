@@ -13,6 +13,17 @@ object ConversationPrompt {
             .take(20)
             .joinToString(separator = "\n") { "- ${it.take(300)}" }
             .ifBlank { "- None yet" }
+        val topicBoundaries = if (request.topic.branded) {
+            """
+
+                The topic is ${request.topic.title}. The model does not contain the book or other source material.
+                Do not quote long passages and do not reconstruct chapters.
+                If an exact detail is uncertain, say so instead of inventing it.
+                Avoid spoilers.
+            """.trimIndent()
+        } else {
+            ""
+        }
         val system = ConversationTurn(
             role = ConversationRole.SYSTEM,
             content = """
@@ -21,6 +32,7 @@ object ConversationPrompt {
                 Briefly reflect the child's latest answer, then ask exactly one natural next question.
                 Never ask for a real name, address, school, contact details, photos, location, or secrets.
                 Do not invent facts about the child. Use the saved memory only when relevant.
+                ${if (request.topic.branded) topicBoundaries else ""}
 
                 Saved conversation summary:
                 ${request.memory.summary.take(1_500).ifBlank { "None yet" }}
@@ -38,9 +50,14 @@ object ConversationPrompt {
         val recentHistory = request.history.takeLast(MAX_HISTORY_TURNS).map { turn ->
             turn.copy(content = turn.content.take(MAX_MESSAGE_CHARS))
         }
+        val currentContent = if (request.opening) {
+            "Open a friendly conversation about ${request.topic.title}. Use one short welcome and ask exactly one question."
+        } else {
+            request.childMessage.trim().take(MAX_MESSAGE_CHARS)
+        }
         val current = ConversationTurn(
             role = ConversationRole.USER,
-            content = request.childMessage.trim().take(MAX_MESSAGE_CHARS),
+            content = currentContent,
         )
         return listOf(system) + recentHistory + current
     }

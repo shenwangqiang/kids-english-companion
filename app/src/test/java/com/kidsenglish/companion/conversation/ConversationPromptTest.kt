@@ -52,6 +52,40 @@ class ConversationPromptTest {
     }
 
     @Test
+    fun brandedTopicPromptSetsSafeConversationBoundaries() {
+        val system = ConversationPrompt.messages(
+            ConversationRequest(
+                ageBand = AgeBand.AGE_9_10,
+                childMessage = "I like Toothless.",
+                topic = ConversationTopicCatalog.predefined.first(),
+            ),
+        ).first().content
+
+        assertTrue(system.contains("How to Train Your Dragon"))
+        assertTrue(system.contains("does not contain the book"))
+        assertTrue(system.contains("Do not quote long passages"))
+        assertTrue(system.contains("do not reconstruct chapters"))
+        assertTrue(system.contains("If an exact detail is uncertain"))
+        assertTrue(system.contains("Avoid spoilers"))
+    }
+
+    @Test
+    fun openingRequestProducesOneTopicQuestionWithoutAChildTurn() {
+        val messages = ConversationPrompt.messages(
+            ConversationRequest(
+                ageBand = AgeBand.AGE_6_8,
+                childMessage = "",
+                topic = ConversationTopicCatalog.predefined.first { it.id == "space" },
+                opening = true,
+            ),
+        )
+
+        assertTrue(messages.last().content.contains("Open a friendly conversation about Space"))
+        assertTrue(messages.last().content.contains("exactly one question"))
+        assertEquals(2, messages.size)
+    }
+
+    @Test
     fun parsesACompleteStructuredOutcome() {
         val content = """
             {

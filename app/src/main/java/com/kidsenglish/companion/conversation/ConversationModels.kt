@@ -28,6 +28,8 @@ data class ConversationRequest(
     val childMessage: String,
     val history: List<ConversationTurn> = emptyList(),
     val memory: ConversationMemory = ConversationMemory(),
+    val topic: ConversationTopic = ConversationTopicCatalog.general,
+    val opening: Boolean = false,
 )
 
 @Serializable
