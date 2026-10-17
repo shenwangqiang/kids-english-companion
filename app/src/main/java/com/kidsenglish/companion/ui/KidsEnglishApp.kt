@@ -69,7 +69,8 @@ fun KidsEnglishApp(
     ) { padding ->
         when (state.screen) {
             AppScreen.WELCOME -> WelcomeScreen(Modifier.padding(padding), viewModel::chooseAgeBand)
-            AppScreen.CONVERSATION -> ConversationScreen(
+            // Task 4 replaces the topic/history placeholders with their dedicated screens.
+            AppScreen.CONVERSATION, AppScreen.TOPICS, AppScreen.HISTORY -> ConversationScreen(
                 Modifier.padding(padding),
                 state,
                 viewModel,

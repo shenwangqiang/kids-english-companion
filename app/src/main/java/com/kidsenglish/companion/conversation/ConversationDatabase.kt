@@ -261,29 +261,4 @@ class ConversationRepository(
         )
         return id
     }
-
-    // Removed when the UI moves to explicit active-session IDs in Task 3.
-    @Deprecated("Use observe(sessionId)")
-    fun observe(ageBand: AgeBand): Flow<ConversationSnapshot> = observe(legacySessionId(ageBand))
-
-    @Deprecated("Use appendUserTurn(sessionId, content)")
-    suspend fun appendUserTurn(ageBand: AgeBand, content: String) {
-        if (content.isBlank()) return
-        appendUserTurn(ensureLegacySession(ageBand), content)
-    }
-
-    @Deprecated("Use applyOutcome(sessionId, outcome)")
-    suspend fun applyOutcome(ageBand: AgeBand, outcome: ConversationOutcome) =
-        applyOutcome(ensureLegacySession(ageBand), outcome)
-
-    @Deprecated("Use clear(sessionId)")
-    suspend fun clear(ageBand: AgeBand) = clear(legacySessionId(ageBand))
-
-    private suspend fun ensureLegacySession(ageBand: AgeBand): String {
-        val id = legacySessionId(ageBand)
-        if (!sessionExists(id)) insertSession(id, ageBand, ConversationTopicCatalog.general)
-        return id
-    }
-
-    private fun legacySessionId(ageBand: AgeBand): String = "conversation-${ageBand.wireValue}"
 }

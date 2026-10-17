@@ -123,18 +123,6 @@ class ConversationDatabaseTest {
         assertEquals(listOf(second), repository.observeHistory(AgeBand.AGE_6_8).first().map { it.sessionId })
     }
 
-    @Suppress("DEPRECATION")
-    @Test
-    fun stagedAgeBandCompatibilityUsesLegacyIdAndExplicitStorage() = runBlocking {
-        repository.appendUserTurn(AgeBand.AGE_6_8, "Legacy call.")
-        repository.applyOutcome(AgeBand.AGE_6_8, outcome("Legacy reply.", "Memory", "Next", "fact"))
-        val snapshot = repository.observe(AgeBand.AGE_6_8).first { it.turns.size == 2 }
-        assertEquals("conversation-6-8", snapshot.sessionId)
-        assertEquals(snapshot, repository.observe("conversation-6-8").first())
-        repository.clear(AgeBand.AGE_6_8)
-        assertFalse(repository.sessionExists("conversation-6-8"))
-    }
-
     private fun outcome(reply: String, summary: String, next: String, fact: String) = ConversationOutcome(
         reply = reply,
         conversationSummary = summary,

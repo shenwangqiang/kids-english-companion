@@ -4,6 +4,22 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class LearningNavigatorTest {
+    @Test fun topicPickerReturnsToConversation() {
+        val navigator = LearningNavigator(AppScreen.CONVERSATION)
+        navigator.showTopicPicker()
+        assertEquals(AppScreen.TOPICS, navigator.screen)
+        navigator.back()
+        assertEquals(AppScreen.CONVERSATION, navigator.screen)
+    }
+
+    @Test fun historyReturnsToConversation() {
+        val navigator = LearningNavigator(AppScreen.CONVERSATION)
+        navigator.showHistory()
+        assertEquals(AppScreen.HISTORY, navigator.screen)
+        navigator.back()
+        assertEquals(AppScreen.CONVERSATION, navigator.screen)
+    }
+
     @Test fun followsWelcomeConversationLibraryReaderPracticeFlow() {
         val navigator = LearningNavigator()
         assertEquals(AppScreen.WELCOME, navigator.screen)

@@ -8,6 +8,9 @@ import com.kidsenglish.companion.R
 import com.kidsenglish.companion.conversation.ConversationMemory
 import com.kidsenglish.companion.conversation.ConversationRequest
 import com.kidsenglish.companion.conversation.ConversationResult
+import com.kidsenglish.companion.conversation.ConversationSessionSummary
+import com.kidsenglish.companion.conversation.ConversationTopic
+import com.kidsenglish.companion.conversation.ConversationTopicCatalog
 import com.kidsenglish.companion.conversation.DEFAULT_CONVERSATION_MODEL
 import com.kidsenglish.companion.conversation.ConversationTurn
 import com.kidsenglish.companion.conversation.ModelDiscoveryResult
@@ -34,6 +37,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
@@ -51,6 +55,9 @@ data class AppUiState(
     val tutorStatus: String = "",
     val tutorLoading: Boolean = false,
     val conversationTurns: List<ConversationTurn> = emptyList(),
+    val activeSessionId: String? = null,
+    val activeTopic: ConversationTopic = ConversationTopicCatalog.general,
+    val conversationHistory: List<ConversationSessionSummary> = emptyList(),
     val conversationMemory: ConversationMemory = ConversationMemory(),
     val conversationStatus: String = "",
     val conversationLoading: Boolean = false,
@@ -70,6 +77,7 @@ data class AppUiState(
 class AppViewModel(application: Application) : AndroidViewModel(application) {
     private val container = (application as KidsEnglishApplication).container
     private val navigator = LearningNavigator()
+    private val pendingConversationSessions = mutableSetOf<String>()
     private val _uiState = MutableStateFlow(AppUiState())
     val uiState: StateFlow<AppUiState> = _uiState.asStateFlow()
 
@@ -101,17 +109,47 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 .map { it.ageBand }
                 .distinctUntilChanged()
                 .flatMapLatest { ageBand ->
-                    container.conversationRepository.observe(ageBand).map { ageBand to it }
+                    container.settingsRepository.activeSessionId(ageBand)
+                        .distinctUntilChanged()
+                        .map { resolveActiveSession(ageBand, it) }
+                        .distinctUntilChanged()
+                        .flatMapLatest { container.conversationRepository.observe(it) }
+                        .map { ageBand to it }
                 }
                 .collect { (ageBand, snapshot) ->
                     _uiState.update { state ->
                         if (state.selectedAgeBand != ageBand) state else state.copy(
+                            activeSessionId = snapshot.sessionId,
+                            activeTopic = snapshot.topic,
                             conversationTurns = snapshot.turns,
                             conversationMemory = snapshot.memory,
+                            conversationLoading = snapshot.sessionId in pendingConversationSessions,
                         )
                     }
                 }
         }
+        viewModelScope.launch {
+            container.settingsRepository.settings
+                .map { it.ageBand }
+                .distinctUntilChanged()
+                .flatMapLatest { ageBand ->
+                    container.conversationRepository.observeHistory(ageBand).map { ageBand to it }
+                }
+                .collect { (ageBand, history) ->
+                    _uiState.update { state ->
+                        if (state.selectedAgeBand != ageBand) state else state.copy(conversationHistory = history)
+                    }
+                }
+        }
+    }
+
+    private suspend fun resolveActiveSession(ageBand: AgeBand, savedId: String?): String {
+        val repository = container.conversationRepository
+        val resolved = savedId?.takeIf { repository.sessionExists(it) }
+            ?: repository.latestSessionId(ageBand)
+            ?: repository.createSession(ageBand, ConversationTopicCatalog.general)
+        if (savedId != resolved) container.settingsRepository.setActiveSessionId(ageBand, resolved)
+        return resolved
     }
 
     fun chooseAgeBand(ageBand: AgeBand) {
@@ -123,8 +161,12 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 selectedAgeBand = ageBand,
                 stories = container.storyRepository.stories(ageBand),
                 currentStory = null,
+                activeSessionId = if (ageChanged) null else it.activeSessionId,
+                activeTopic = if (ageChanged) ConversationTopicCatalog.general else it.activeTopic,
+                conversationHistory = if (ageChanged) emptyList() else it.conversationHistory,
                 conversationTurns = if (ageChanged) emptyList() else it.conversationTurns,
                 conversationMemory = if (ageChanged) ConversationMemory() else it.conversationMemory,
+                conversationLoading = if (ageChanged) false else it.conversationLoading,
                 conversationStatus = if (it.settings.baseUrl.isBlank()) text(R.string.conversation_offline) else "",
             )
         }
@@ -146,42 +188,108 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.update { it.copy(screen = navigator.screen) }
     }
 
+    fun showTopicPicker() {
+        navigator.showTopicPicker()
+        _uiState.update { it.copy(screen = navigator.screen) }
+    }
+
+    fun showConversationHistory() {
+        navigator.showHistory()
+        _uiState.update { it.copy(screen = navigator.screen) }
+    }
+
+    fun openConversation(sessionId: String) {
+        val ageBand = _uiState.value.selectedAgeBand
+        viewModelScope.launch {
+            val belongsToAgeBand = container.conversationRepository.observeHistory(ageBand).first()
+                .any { it.sessionId == sessionId }
+            if (!belongsToAgeBand) return@launch
+            container.settingsRepository.setActiveSessionId(ageBand, sessionId)
+            if (_uiState.value.selectedAgeBand == ageBand) showConversation()
+        }
+    }
+
+    fun createConversation(topic: ConversationTopic) {
+        val ageBand = _uiState.value.selectedAgeBand
+        viewModelScope.launch {
+            val sessionId = container.conversationRepository.createSession(ageBand, topic)
+            pendingConversationSessions += sessionId
+            container.settingsRepository.setActiveSessionId(ageBand, sessionId)
+            val snapshot = container.conversationRepository.observe(sessionId).first()
+            if (_uiState.value.selectedAgeBand == ageBand) showConversation()
+            _uiState.update {
+                if (it.activeSessionId == sessionId) it.copy(conversationLoading = true, conversationStatus = "") else it
+            }
+            val result = container.conversationClient.chat(
+                ConversationRequest(
+                    ageBand = ageBand,
+                    childMessage = "",
+                    history = snapshot.turns,
+                    memory = snapshot.memory,
+                    topic = snapshot.topic,
+                    opening = true,
+                ),
+            )
+            applyConversationResult(sessionId, result)
+        }
+    }
+
     fun sendConversationMessage(message: String) {
         val state = _uiState.value
+        val sessionId = state.activeSessionId ?: return
         val normalized = message.trim()
         if (normalized.isBlank() || normalized.length > 500 || state.conversationLoading) return
         if (state.settings.baseUrl.isBlank()) {
             _uiState.update { it.copy(conversationStatus = text(R.string.conversation_offline)) }
             return
         }
+        pendingConversationSessions += sessionId
         _uiState.update { it.copy(conversationLoading = true, conversationStatus = "") }
         viewModelScope.launch {
-            container.conversationRepository.appendUserTurn(state.selectedAgeBand, normalized)
+            container.conversationRepository.appendUserTurn(sessionId, normalized)
             val result = container.conversationClient.chat(
                 ConversationRequest(
                     ageBand = state.selectedAgeBand,
                     childMessage = normalized,
                     history = state.conversationTurns,
                     memory = state.conversationMemory,
+                    topic = state.activeTopic,
                 ),
             )
-            when (result) {
-                is ConversationResult.Success -> {
-                    container.conversationRepository.applyOutcome(state.selectedAgeBand, result.outcome)
-                    _uiState.update { it.copy(conversationLoading = false) }
+            applyConversationResult(sessionId, result)
+        }
+    }
+
+    private suspend fun applyConversationResult(sessionId: String, result: ConversationResult) {
+        pendingConversationSessions -= sessionId
+        when (result) {
+            is ConversationResult.Success -> {
+                if (container.conversationRepository.sessionExists(sessionId)) {
+                    container.conversationRepository.applyOutcome(sessionId, result.outcome)
                 }
-                is ConversationResult.AuthenticationRequired -> conversationFailure(text(R.string.authentication_required))
-                is ConversationResult.Unavailable -> conversationFailure(text(R.string.conversation_offline_period))
-                is ConversationResult.InvalidResponse -> conversationFailure(text(R.string.invalid_conversation_response))
+                _uiState.update { if (it.activeSessionId == sessionId) it.copy(conversationLoading = false) else it }
             }
+            is ConversationResult.AuthenticationRequired -> conversationFailure(sessionId, text(R.string.authentication_required))
+            is ConversationResult.Unavailable -> conversationFailure(sessionId, text(R.string.conversation_offline_period))
+            is ConversationResult.InvalidResponse -> conversationFailure(sessionId, text(R.string.invalid_conversation_response))
+        }
+    }
+
+    private fun conversationFailure(sessionId: String, message: String) {
+        _uiState.update {
+            if (it.activeSessionId == sessionId) it.copy(conversationLoading = false, conversationStatus = message) else it
         }
     }
 
     fun clearConversation() {
-        val ageBand = _uiState.value.selectedAgeBand
+        val state = _uiState.value
+        val sessionId = state.activeSessionId ?: return
         viewModelScope.launch {
-            container.conversationRepository.clear(ageBand)
-            _uiState.update { it.copy(conversationStatus = text(R.string.conversation_cleared)) }
+            container.conversationRepository.clear(sessionId)
+            resolveActiveSession(state.selectedAgeBand, null)
+            _uiState.update {
+                if (it.selectedAgeBand == state.selectedAgeBand) it.copy(conversationStatus = text(R.string.conversation_cleared)) else it
+            }
         }
     }
 
@@ -227,19 +335,22 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun sendVoiceTurn(message: String) {
         val state = _uiState.value
+        val sessionId = state.activeSessionId ?: return
         viewModelScope.launch {
-            container.conversationRepository.appendUserTurn(state.selectedAgeBand, message)
+            container.conversationRepository.appendUserTurn(sessionId, message)
             when (val result = container.conversationClient.chat(
                 ConversationRequest(
                     ageBand = state.selectedAgeBand,
                     childMessage = message,
                     history = state.conversationTurns,
                     memory = state.conversationMemory,
+                    topic = state.activeTopic,
                 ),
             )) {
                 is ConversationResult.Success -> {
-                    container.conversationRepository.applyOutcome(state.selectedAgeBand, result.outcome)
-                    if (!_uiState.value.voiceSession.isActive) return@launch
+                    if (!container.conversationRepository.sessionExists(sessionId)) return@launch
+                    container.conversationRepository.applyOutcome(sessionId, result.outcome)
+                    if (_uiState.value.activeSessionId != sessionId || !_uiState.value.voiceSession.isActive) return@launch
                     updateVoice(VoiceEvent.ReplyReady(result.outcome.reply))
                     container.speechController.speak(
                         result.outcome.reply,

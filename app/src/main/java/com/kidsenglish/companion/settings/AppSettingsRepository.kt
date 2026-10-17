@@ -43,6 +43,18 @@ class AppSettingsRepository(private val context: Context) {
     suspend fun setTtsPreference(value: TtsPreference) = edit(TTS_PREFERENCE, value.wireValue)
     suspend fun setAllowDebugHttp(value: Boolean) = context.settingsDataStore.edit { it[ALLOW_DEBUG_HTTP] = value }
 
+    fun activeSessionId(ageBand: AgeBand): Flow<String?> =
+        context.settingsDataStore.data.map { it[activeSessionKey(ageBand)] }
+
+    suspend fun setActiveSessionId(ageBand: AgeBand, sessionId: String) =
+        edit(activeSessionKey(ageBand), sessionId)
+
+    private fun activeSessionKey(ageBand: AgeBand) = when (ageBand) {
+        AgeBand.AGE_6_8 -> ACTIVE_SESSION_6_8
+        AgeBand.AGE_9_10 -> ACTIVE_SESSION_9_10
+        AgeBand.AGE_11_12 -> ACTIVE_SESSION_11_12
+    }
+
     private suspend fun edit(key: androidx.datastore.preferences.core.Preferences.Key<String>, value: String) {
         context.settingsDataStore.edit { it[key] = value }
     }
@@ -54,6 +66,9 @@ class AppSettingsRepository(private val context: Context) {
         private val SPEECH_RATE = floatPreferencesKey("speech_rate")
         private val TTS_PREFERENCE = stringPreferencesKey("tts_preference")
         private val ALLOW_DEBUG_HTTP = booleanPreferencesKey("allow_debug_http")
+        private val ACTIVE_SESSION_6_8 = stringPreferencesKey("active_session_6_8")
+        private val ACTIVE_SESSION_9_10 = stringPreferencesKey("active_session_9_10")
+        private val ACTIVE_SESSION_11_12 = stringPreferencesKey("active_session_11_12")
     }
 }
 

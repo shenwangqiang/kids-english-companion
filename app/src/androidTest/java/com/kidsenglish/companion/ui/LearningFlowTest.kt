@@ -11,11 +11,13 @@ import android.Manifest
 import androidx.test.platform.app.InstrumentationRegistry
 import com.kidsenglish.companion.KidsEnglishApplication
 import com.kidsenglish.companion.MainActivity
+import com.kidsenglish.companion.conversation.ConversationTopicCatalog
 import com.kidsenglish.companion.model.AgeBand
 import com.kidsenglish.companion.settings.AppSettingsRepository
 import com.kidsenglish.companion.speech.TtsPreference
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule
@@ -31,7 +33,10 @@ class LearningFlowTest {
             AppSettingsRepository(context).setAllowDebugHttp(false)
             AppSettingsRepository(context).setModelName("qwen3.5:9b")
             AppSettingsRepository(context).setTtsPreference(TtsPreference.AUTO)
-            (context.applicationContext as KidsEnglishApplication).container.conversationRepository.clear(AgeBand.AGE_6_8)
+            val repository = (context.applicationContext as KidsEnglishApplication).container.conversationRepository
+            repository.observeHistory(AgeBand.AGE_6_8).first().forEach { repository.clear(it.sessionId) }
+            val sessionId = repository.createSession(AgeBand.AGE_6_8, ConversationTopicCatalog.general)
+            AppSettingsRepository(context).setActiveSessionId(AgeBand.AGE_6_8, sessionId)
         }
         compose.activityRule.scenario.recreate()
         compose.waitForIdle()
@@ -58,7 +63,8 @@ class LearningFlowTest {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         runBlocking {
             val repository = (context.applicationContext as KidsEnglishApplication).container.conversationRepository
-            repeat(14) { index -> repository.appendUserTurn(AgeBand.AGE_6_8, "History message ${index + 1}") }
+            val sessionId = AppSettingsRepository(context).activeSessionId(AgeBand.AGE_6_8).first()!!
+            repeat(14) { index -> repository.appendUserTurn(sessionId, "History message ${index + 1}") }
         }
         compose.activityRule.scenario.recreate()
         compose.waitForIdle()
@@ -88,7 +94,11 @@ class LearningFlowTest {
         compose.waitForIdle()
 
         val context = InstrumentationRegistry.getInstrumentation().targetContext
-        val saved = runBlocking { AppSettingsRepository(context).settings.first().ttsPreference }
+        val saved = runBlocking {
+            withTimeout(10_000) {
+                AppSettingsRepository(context).settings.first { it.ttsPreference == TtsPreference.GOOGLE }.ttsPreference
+            }
+        }
         assertEquals(TtsPreference.GOOGLE, saved)
     }
 
