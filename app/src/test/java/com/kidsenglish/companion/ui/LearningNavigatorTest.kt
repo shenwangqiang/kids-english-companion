@@ -4,9 +4,11 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class LearningNavigatorTest {
-    @Test fun followsWelcomeLibraryReaderPracticeFlow() {
+    @Test fun followsWelcomeConversationLibraryReaderPracticeFlow() {
         val navigator = LearningNavigator()
         assertEquals(AppScreen.WELCOME, navigator.screen)
+        navigator.showConversation()
+        assertEquals(AppScreen.CONVERSATION, navigator.screen)
         navigator.showLibrary()
         assertEquals(AppScreen.LIBRARY, navigator.screen)
         navigator.showReader()
@@ -21,5 +23,9 @@ class LearningNavigatorTest {
         assertEquals(AppScreen.READER, navigator.screen)
         navigator.back()
         assertEquals(AppScreen.LIBRARY, navigator.screen)
+        navigator.back()
+        assertEquals(AppScreen.CONVERSATION, navigator.screen)
+        navigator.back()
+        assertEquals(AppScreen.WELCOME, navigator.screen)
     }
 }

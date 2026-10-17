@@ -6,7 +6,9 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.kidsenglish.companion.conversation.DEFAULT_CONVERSATION_MODEL
 import com.kidsenglish.companion.model.AgeBand
+import com.kidsenglish.companion.speech.TtsPreference
 import java.net.URI
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -15,20 +17,22 @@ private val Context.settingsDataStore by preferencesDataStore("app_settings")
 
 data class AppSettings(
     val ageBand: AgeBand = AgeBand.AGE_6_8,
-    val baseUrl: String = "",
-    val modelName: String = "qwen3:4b",
+    val baseUrl: String = "http://10.0.2.2:11434",
+    val modelName: String = DEFAULT_CONVERSATION_MODEL,
     val speechRate: Float = 0.9f,
-    val allowDebugHttp: Boolean = false,
+    val ttsPreference: TtsPreference = TtsPreference.AUTO,
+    val allowDebugHttp: Boolean = true,
 )
 
 class AppSettingsRepository(private val context: Context) {
     val settings: Flow<AppSettings> = context.settingsDataStore.data.map { values ->
         AppSettings(
             ageBand = AgeBand.entries.firstOrNull { it.wireValue == values[AGE_BAND] } ?: AgeBand.AGE_6_8,
-            baseUrl = values[BASE_URL].orEmpty(),
-            modelName = values[MODEL_NAME] ?: "qwen3:4b",
+            baseUrl = values[BASE_URL] ?: "http://10.0.2.2:11434",
+            modelName = values[MODEL_NAME] ?: DEFAULT_CONVERSATION_MODEL,
             speechRate = (values[SPEECH_RATE] ?: 0.9f).coerceIn(0.6f, 1.2f),
-            allowDebugHttp = values[ALLOW_DEBUG_HTTP] ?: false,
+            ttsPreference = TtsPreference.fromWireValue(values[TTS_PREFERENCE]),
+            allowDebugHttp = values[ALLOW_DEBUG_HTTP] ?: true,
         )
     }
 
@@ -36,6 +40,7 @@ class AppSettingsRepository(private val context: Context) {
     suspend fun setBaseUrl(value: String) = edit(BASE_URL, value.trim())
     suspend fun setModelName(value: String) = edit(MODEL_NAME, value.trim())
     suspend fun setSpeechRate(value: Float) = context.settingsDataStore.edit { it[SPEECH_RATE] = value.coerceIn(0.6f, 1.2f) }
+    suspend fun setTtsPreference(value: TtsPreference) = edit(TTS_PREFERENCE, value.wireValue)
     suspend fun setAllowDebugHttp(value: Boolean) = context.settingsDataStore.edit { it[ALLOW_DEBUG_HTTP] = value }
 
     private suspend fun edit(key: androidx.datastore.preferences.core.Preferences.Key<String>, value: String) {
@@ -47,6 +52,7 @@ class AppSettingsRepository(private val context: Context) {
         private val BASE_URL = stringPreferencesKey("base_url")
         private val MODEL_NAME = stringPreferencesKey("model_name")
         private val SPEECH_RATE = floatPreferencesKey("speech_rate")
+        private val TTS_PREFERENCE = stringPreferencesKey("tts_preference")
         private val ALLOW_DEBUG_HTTP = booleanPreferencesKey("allow_debug_http")
     }
 }

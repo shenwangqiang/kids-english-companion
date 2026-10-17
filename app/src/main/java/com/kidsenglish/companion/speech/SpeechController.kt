@@ -1,52 +1,121 @@
 package com.kidsenglish.companion.speech
 
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
+import android.speech.RecognitionService
 import android.speech.SpeechRecognizer
 import android.speech.tts.TextToSpeech
+import android.speech.tts.UtteranceProgressListener
+import com.kidsenglish.companion.R
 import java.util.Locale
 
 interface SpeechController {
-    fun speak(text: String, rate: Float)
+    fun speak(
+        text: String,
+        rate: Float,
+        style: SpeechStyle = SpeechStyle.NARRATION,
+        onDone: () -> Unit = {},
+        onError: (String) -> Unit = {},
+    )
     fun startListening(onResult: (String) -> Unit, onError: (String) -> Unit)
     fun stopListening()
+    fun stopSpeaking()
+    fun setTtsPreference(preference: TtsPreference)
     fun shutdown()
+}
+
+enum class TtsPreference(val wireValue: String) {
+    AUTO("auto"),
+    GOOGLE("google"),
+    IFLYTEK("iflytek"),
+    ;
+
+    companion object {
+        fun fromWireValue(value: String?): TtsPreference = entries.firstOrNull { it.wireValue == value } ?: AUTO
+    }
+}
+
+data class TtsEngine(val packageName: String, val label: String)
+
+object TtsEngineSelector {
+    fun candidates(preference: TtsPreference, engines: List<TtsEngine>): List<String?> {
+        val google = engines.firstOrNull { engine ->
+            engine.packageName.contains("google", ignoreCase = true) ||
+                engine.label.contains("google", ignoreCase = true)
+        }?.packageName
+        val iflytek = engines.firstOrNull { engine ->
+            engine.packageName.contains("iflytek", ignoreCase = true) ||
+                engine.label.contains("iflytek", ignoreCase = true) ||
+                engine.label.contains("讯飞")
+        }?.packageName
+        val preferred = when (preference) {
+            TtsPreference.AUTO -> listOfNotNull(google, iflytek)
+            TtsPreference.GOOGLE -> listOfNotNull(google)
+            TtsPreference.IFLYTEK -> listOfNotNull(iflytek)
+        }
+        return (preferred + listOf<String?>(null)).distinct()
+    }
+}
+
+enum class SpeechStyle(val pitch: Float, private val minimumRate: Float) {
+    NARRATION(pitch = 1.0f, minimumRate = 0.6f),
+    CHILD_CONVERSATION(pitch = 1.08f, minimumRate = 1.0f),
+    ;
+
+    fun resolveRate(selectedRate: Float): Float = selectedRate.coerceIn(minimumRate, 1.2f)
 }
 
 class AndroidSpeechController(private val context: Context) : SpeechController {
     private var ttsReady = false
     private var tts: TextToSpeech? = null
+    private var speechDone: () -> Unit = {}
+    private var speechError: (String) -> Unit = {}
+    private var ttsPreference: TtsPreference? = null
+    private var initializationGeneration = 0
 
     init {
-        tts = TextToSpeech(context) { status ->
-        ttsReady = status == TextToSpeech.SUCCESS
-            if (ttsReady) tts?.language = Locale.US
-        }
+        setTtsPreference(TtsPreference.AUTO)
     }
     private var recognizer: SpeechRecognizer? = null
 
-    override fun speak(text: String, rate: Float) {
-        if (!ttsReady || text.isBlank()) return
+    override fun speak(
+        text: String,
+        rate: Float,
+        style: SpeechStyle,
+        onDone: () -> Unit,
+        onError: (String) -> Unit,
+    ) {
+        if (!ttsReady || text.isBlank()) {
+            onError(context.getString(R.string.tts_not_ready))
+            return
+        }
+        speechDone = onDone
+        speechError = onError
         tts?.stop()
-        tts?.setSpeechRate(rate.coerceIn(0.6f, 1.2f))
+        tts?.setPitch(style.pitch)
+        tts?.setSpeechRate(style.resolveRate(rate))
         tts?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "story-speech")
     }
 
     override fun startListening(onResult: (String) -> Unit, onError: (String) -> Unit) {
         val reportError = onError
-        if (!SpeechRecognizer.isRecognitionAvailable(context)) {
-            reportError("English speech recognition is not available on this device.")
+        stopListening()
+        val speechRecognizer = createSpeechRecognizer()
+        if (speechRecognizer == null) {
+            reportError(context.getString(R.string.speech_not_available))
             return
         }
-        stopListening()
-        recognizer = SpeechRecognizer.createSpeechRecognizer(context).also { speechRecognizer ->
+        recognizer = speechRecognizer.also {
             speechRecognizer.setRecognitionListener(object : RecognitionListener {
                 override fun onResults(results: Bundle) {
                     val text = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull().orEmpty()
-                    if (text.isBlank()) reportError("I could not hear the sentence. Try again.") else onResult(text)
+                    if (text.isBlank()) reportError(context.getString(R.string.speech_no_match)) else onResult(text)
                 }
                 override fun onError(error: Int) = reportError(recognitionError(error))
                 override fun onReadyForSpeech(params: Bundle?) = Unit
@@ -68,25 +137,130 @@ class AndroidSpeechController(private val context: Context) : SpeechController {
         }
     }
 
+    private fun createSpeechRecognizer(): SpeechRecognizer? {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && SpeechRecognizer.isOnDeviceRecognitionAvailable(context)) {
+            runCatching { SpeechRecognizer.createOnDeviceSpeechRecognizer(context) }
+                .getOrNull()
+                ?.let { return it }
+        }
+
+        @Suppress("DEPRECATION")
+        val service = context.packageManager
+            .queryIntentServices(Intent(RecognitionService.SERVICE_INTERFACE), PackageManager.MATCH_ALL)
+            .asSequence()
+            .mapNotNull { it.serviceInfo }
+            .firstOrNull { it.enabled && it.applicationInfo.enabled }
+
+        if (service != null) {
+            val component = ComponentName(service.packageName, service.name)
+            runCatching { SpeechRecognizer.createSpeechRecognizer(context, component) }
+                .getOrNull()
+                ?.let { return it }
+        }
+
+        if (!SpeechRecognizer.isRecognitionAvailable(context)) return null
+        return runCatching { SpeechRecognizer.createSpeechRecognizer(context) }.getOrNull()
+    }
+
     override fun stopListening() {
         recognizer?.cancel()
         recognizer?.destroy()
         recognizer = null
     }
 
-    override fun shutdown() {
-        stopListening()
+    override fun stopSpeaking() {
+        speechDone = {}
+        speechError = {}
         tts?.stop()
+    }
+
+    override fun setTtsPreference(preference: TtsPreference) {
+        if (ttsPreference == preference) return
+        ttsPreference = preference
+        ttsReady = false
+        initializationGeneration += 1
+        val generation = initializationGeneration
         tts?.shutdown()
         tts = null
+        initializeCandidate(
+            candidates = TtsEngineSelector.candidates(preference, installedTtsEngines()),
+            index = 0,
+            generation = generation,
+        )
+    }
+
+    private fun initializeCandidate(candidates: List<String?>, index: Int, generation: Int) {
+        if (generation != initializationGeneration || index >= candidates.size) return
+        val enginePackage = candidates[index]
+        var candidate: TextToSpeech? = null
+        candidate = if (enginePackage == null) {
+            TextToSpeech(context) { status ->
+                onTtsInitialized(candidate, status, candidates, index, generation)
+            }
+        } else {
+            TextToSpeech(context, { status ->
+                onTtsInitialized(candidate, status, candidates, index, generation)
+            }, enginePackage)
+        }
+        tts = candidate
+    }
+
+    private fun onTtsInitialized(
+        candidate: TextToSpeech?,
+        status: Int,
+        candidates: List<String?>,
+        index: Int,
+        generation: Int,
+    ) {
+        if (generation != initializationGeneration) {
+            candidate?.shutdown()
+            return
+        }
+        val readyTts = candidate
+        val languageStatus = if (status == TextToSpeech.SUCCESS) readyTts?.setLanguage(Locale.US) else null
+        if (status != TextToSpeech.SUCCESS || readyTts == null || languageStatus == null || languageStatus < TextToSpeech.LANG_AVAILABLE) {
+            candidate?.shutdown()
+            if (tts === candidate) tts = null
+            initializeCandidate(candidates, index + 1, generation)
+            return
+        }
+        tts = readyTts
+        ttsReady = true
+        readyTts.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+            override fun onStart(utteranceId: String?) = Unit
+            override fun onDone(utteranceId: String?) = speechDone()
+            @Deprecated("Deprecated in Java")
+            override fun onError(utteranceId: String?) = speechError(context.getString(R.string.tts_stopped))
+            override fun onError(utteranceId: String?, errorCode: Int) = speechError(context.getString(R.string.tts_stopped))
+        })
+    }
+
+    private fun installedTtsEngines(): List<TtsEngine> {
+        val services = context.packageManager.queryIntentServices(
+            Intent(TextToSpeech.Engine.INTENT_ACTION_TTS_SERVICE),
+            PackageManager.MATCH_ALL,
+        )
+        return services.mapNotNull { service ->
+            val info = service.serviceInfo ?: return@mapNotNull null
+            val label = runCatching { info.loadLabel(context.packageManager).toString() }.getOrDefault(info.packageName)
+            TtsEngine(info.packageName, label)
+        }
+    }
+
+    override fun shutdown() {
+        stopListening()
+        stopSpeaking()
+        tts?.shutdown()
+        tts = null
+        ttsReady = false
     }
 
     private fun recognitionError(error: Int) = when (error) {
-        SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> "Microphone permission is required."
-        SpeechRecognizer.ERROR_NETWORK, SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> "Speech service is offline."
-        SpeechRecognizer.ERROR_NO_MATCH, SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> "I could not hear the sentence. Try again."
-        SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> "Speech recognition is busy. Try again."
-        SpeechRecognizer.ERROR_CLIENT -> "Speech recognition was cancelled."
-        else -> "Speech recognition stopped. Try again."
+        SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> context.getString(R.string.microphone_permission_required)
+        SpeechRecognizer.ERROR_NETWORK, SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> context.getString(R.string.speech_service_offline)
+        SpeechRecognizer.ERROR_NO_MATCH, SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> context.getString(R.string.speech_no_match)
+        SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> context.getString(R.string.speech_busy)
+        SpeechRecognizer.ERROR_CLIENT -> context.getString(R.string.speech_cancelled)
+        else -> context.getString(R.string.speech_stopped)
     }
 }

@@ -7,6 +7,9 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.RoomDatabase
+import com.kidsenglish.companion.conversation.ConversationDao
+import com.kidsenglish.companion.conversation.ConversationSessionEntity
+import com.kidsenglish.companion.conversation.ConversationTurnEntity
 import kotlinx.coroutines.flow.Flow
 
 @Entity(tableName = "learning_progress", primaryKeys = ["storyId"])
@@ -33,9 +36,14 @@ interface ProgressDao {
     fun observeAll(): Flow<List<LearningProgressEntity>>
 }
 
-@Database(entities = [LearningProgressEntity::class], version = 1, exportSchema = false)
+@Database(
+    entities = [LearningProgressEntity::class, ConversationSessionEntity::class, ConversationTurnEntity::class],
+    version = 2,
+    exportSchema = false,
+)
 abstract class ProgressDatabase : RoomDatabase() {
     abstract fun progressDao(): ProgressDao
+    abstract fun conversationDao(): ConversationDao
 }
 
 class ProgressRepository(
