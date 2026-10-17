@@ -1,6 +1,7 @@
 package com.kidsenglish.companion.ui
 
 import android.Manifest
+import android.content.pm.ActivityInfo
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
@@ -39,6 +40,11 @@ import org.junit.Test
 
 class LearningFlowTest {
     @get:Rule val compose = createAndroidComposeRule<MainActivity>()
+
+    @Test fun mainActivityIsLockedToPortrait() {
+        val info = compose.activity.packageManager.getActivityInfo(compose.activity.componentName, 0)
+        assertEquals(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT, info.screenOrientation)
+    }
 
     @Before fun resetModelConnection() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
@@ -201,7 +207,10 @@ class LearningFlowTest {
         compose.onNodeWithTag("settings_list").performScrollToNode(hasText("朗读引擎"))
         compose.onNodeWithText("自动（Google → 讯飞 → 系统默认）").performClick()
         compose.onNodeWithText("Google").performClick()
-        compose.waitForIdle()
+        compose.waitUntil(timeoutMillis = 10_000) {
+            compose.onAllNodesWithText("自动（Google → 讯飞 → 系统默认）").fetchSemanticsNodes().isEmpty() &&
+                compose.onAllNodesWithText("Google").fetchSemanticsNodes().size == 1
+        }
 
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val saved = runBlocking {

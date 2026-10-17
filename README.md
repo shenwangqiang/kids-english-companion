@@ -7,6 +7,10 @@
 ## 当前能力
 
 - 三个年龄段：6–8、9–10、11–12 岁，每组 6 篇原创故事
+- 话题目录：How to Train Your Dragon、Harry Potter、Space、Dinosaurs、Animals、School Life，以及最多 60 个字符的自定义话题
+- 在“新建对话”中选择话题；“历史对话”按最近更新排序，可重新打开当前年龄段的独立对话
+- 点击用户或助手的英文消息可重新朗读，不会启动语音对话
+- 竖屏布局，旋转设备时主页面仍保持竖屏
 - Android Text-to-Speech 逐句朗读与语速调节
 - Android SpeechRecognizer 跟读转写和单词匹配分数
 - 用户主动开启的免手持语音循环：听取、回答、朗读后自动继续听取
@@ -19,6 +23,8 @@
 
 跟读分数只是词语匹配练习，不是专业发音评估。Android 的语音识别是否完全离线取决于设备和已安装语言包。
 
+How to Train Your Dragon 和 Harry Potter 等品牌名称仅作为讨论话题，应用不包含这些书籍的原文或完整内容。话题对话与原创分级故事是两个独立入口。
+
 语音对话必须在应用可见时由用户点击 `Start voice conversation` 启动，并授予麦克风及通知权限。启动后可锁屏继续；通知和页面上的 Stop 都会停止识别、TTS 与前台服务。没有唤醒词，也不会在开机或后台静默启动麦克风。部分设备会因省电策略或厂商 SpeechRecognizer 限制而在锁屏后暂停识别，文本对话不受影响。
 
 ## 构建要求
@@ -28,10 +34,10 @@
 - Android 8.0（API 26）或更高版本
 
 ```bash
-./gradlew testDebugUnitTest
-./gradlew connectedDebugAndroidTest
-./gradlew lintDebug assembleDebug
-adb install -r app/build/outputs/apk/debug/app-debug.apk
+./gradlew testDebugUnitTest lintDebug assembleDebug
+ANDROID_SERIAL=emulator-5554 ./gradlew connectedDebugAndroidTest
+adb -s emulator-5554 install -r -t app/build/outputs/apk/debug/app-debug.apk
+adb -s emulator-5554 reverse tcp:11434 tcp:11434
 ```
 
 首次启动选择年龄段即可进入对话；即使模型离线，故事阅读、朗读、跟读和进度仍可使用。`Settings` 可配置：
@@ -52,6 +58,7 @@ Qwen 开放权重和 Ollama 软件本身可免费自建；本地运行不按请�
 ## 隐私与安全边界
 
 - 故事和学习进度保存在设备本地。
+- 历史对话、话题、阶段总结和记忆只保存在当前设备，不提供云端同步；不同年龄段的历史分开显示。
 - 音频交给 Android 系统语音识别服务处理；具体是否联网由设备实现决定。
 - 对话会把最近 12 轮、阶段总结和当前输入发送到你配置的服务。
 - 不记录 Token、儿童音频或识别文本到日志。
