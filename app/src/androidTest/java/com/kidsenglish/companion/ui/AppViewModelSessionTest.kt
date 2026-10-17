@@ -4,14 +4,25 @@ import androidx.lifecycle.ViewModelStore
 import androidx.test.core.app.ApplicationProvider
 import com.kidsenglish.companion.KidsEnglishApplication
 import com.kidsenglish.companion.R
+import com.kidsenglish.companion.conversation.ConversationClient
 import com.kidsenglish.companion.conversation.ConversationOutcome
+import com.kidsenglish.companion.conversation.ConversationRequest
+import com.kidsenglish.companion.conversation.ConversationResult
 import com.kidsenglish.companion.conversation.ConversationTopic
 import com.kidsenglish.companion.conversation.ConversationTopicCatalog
+import com.kidsenglish.companion.conversation.ModelDiscoveryResult
+import com.kidsenglish.companion.conversation.VoicePhase
+import com.kidsenglish.companion.conversation.VoiceSessionState
 import com.kidsenglish.companion.model.AgeBand
+import com.kidsenglish.companion.speech.SpeechController
+import com.kidsenglish.companion.speech.SpeechStyle
+import com.kidsenglish.companion.speech.TtsPreference
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -241,12 +252,218 @@ class AppViewModelSessionTest {
         }
     }
 
-    private suspend fun startViewModel() = onMain {
-        viewModel = AppViewModel(application)
+    @Test
+    fun heldRecognitionCannotCrossHistorySessionSwitch() = runBlocking<Unit> {
+        val voice = prepareVoiceSessions()
+        val recognition = voice.speech.recognitions.single()
+        onMain { viewModel.openConversation(voice.second) }
+        awaitState { it.activeSessionId == voice.second }
+        onMain { recognition.onResult("Speech from the ocean session.") }
+        assertVoiceSessionUntouched(voice.second, VoiceSessionState())
+        assertEquals(0, voice.client.requestCount)
+    }
+
+    @Test
+    fun heldRecognitionCannotCrossClearAndFallback() = runBlocking<Unit> {
+        val voice = prepareVoiceSessions()
+        val recognition = voice.speech.recognitions.single()
+        onMain { viewModel.clearConversation() }
+        awaitState { it.activeSessionId == voice.second }
+        onMain { recognition.onResult("Speech from a deleted session.") }
+        assertVoiceSessionUntouched(voice.second, VoiceSessionState())
+        assertFalse(repository.sessionExists(voice.first))
+        assertEquals(0, voice.client.requestCount)
+    }
+
+    @Test
+    fun heldRecognitionCannotCrossAgeBandSwitch() = runBlocking<Unit> {
+        val voice = prepareVoiceSessions(AgeBand.AGE_11_12)
+        val recognition = voice.speech.recognitions.single()
+        onMain { viewModel.chooseAgeBand(AgeBand.AGE_11_12) }
+        awaitState { it.activeSessionId == voice.second }
+        onMain { recognition.onResult("Speech from the younger child.") }
+        assertVoiceSessionUntouched(voice.second, VoiceSessionState())
+        assertEquals(0, voice.client.requestCount)
+    }
+
+    @Test
+    fun stoppedRecognitionCannotMutateRestartedOperationInSameSession() = runBlocking<Unit> {
+        val voice = prepareVoiceSessions()
+        val previous = voice.speech.recognitions.single()
+        onMain {
+            viewModel.stopVoiceConversation()
+            assertTrue(viewModel.startVoiceConversation())
+            previous.onResult("Stale recognition.")
+            previous.onError("Stale recognition failure.")
+        }
+        assertVoiceSessionUntouched(voice.first, VoiceSessionState(phase = VoicePhase.LISTENING))
+        assertEquals(0, voice.client.requestCount)
+    }
+
+    @Test
+    fun lateVoiceHttpFailureCannotFailAnotherSessionsNewOperation() = runBlocking<Unit> {
+        val voice = prepareVoiceSessions()
+        onMain { voice.speech.recognitions.single().onResult("Dolphins.") }
+        val pending = voice.client.nextCall()
+        assertEquals(ocean, pending.request.topic)
+        assertEquals(AgeBand.AGE_6_8, pending.request.ageBand)
+        onMain { viewModel.openConversation(voice.second) }
+        awaitState { it.activeSessionId == voice.second }
+        onMain {
+            viewModel.stopVoiceConversation()
+            assertTrue(viewModel.startVoiceConversation())
+        }
+        pending.result.complete(ConversationResult.Unavailable())
+        pending.returned.await()
+        onMain { }
+        assertVoiceSessionUntouched(voice.second, VoiceSessionState(phase = VoicePhase.LISTENING))
+    }
+
+    @Test
+    fun lateVoiceHttpSuccessCannotLeaveNewSessionThinking() = runBlocking<Unit> {
+        val voice = prepareVoiceSessions()
+        onMain { voice.speech.recognitions.single().onResult("Dolphins.") }
+        val pending = voice.client.nextCall()
+        onMain { viewModel.openConversation(voice.second) }
+        awaitState { it.activeSessionId == voice.second }
+        pending.result.complete(voiceSuccess("Old ocean reply."))
+        pending.returned.await()
+        onMain { }
+        assertVoiceSessionUntouched(voice.second, VoiceSessionState())
+        assertTrue(voice.speech.playbacks.isEmpty())
+    }
+
+    @Test
+    fun lateTtsCompletionCannotRestartAnotherSessionsSpeakingOperation() = runBlocking<Unit> {
+        val (voice, previousPlayback) = prepareTwoSpeakingSessions()
+        val expected = viewModel.uiState.value.voiceSession
+        assertEquals(VoicePhase.SPEAKING, expected.phase)
+        onMain { previousPlayback.onDone() }
+        onMain { }
+        assertEquals(expected, viewModel.uiState.value.voiceSession)
+        assertEquals(2, voice.speech.recognitions.size)
+        assertEquals(listOf("A new space message.", "New space reply."), repository.observe(voice.second).first().turns.map { it.content })
+        assertEquals("New space reply.", viewModel.uiState.value.conversationMemory.summary)
+    }
+
+    @Test
+    fun lateTtsFailureCannotFailAnotherSessionsSpeakingOperation() = runBlocking<Unit> {
+        val (voice, previousPlayback) = prepareTwoSpeakingSessions()
+        val expected = viewModel.uiState.value.voiceSession
+        onMain { previousPlayback.onError("Old playback failed.") }
+        onMain { }
+        assertEquals(expected, viewModel.uiState.value.voiceSession)
+        assertEquals(2, voice.speech.recognitions.size)
+        assertEquals("New space reply.", repository.observe(voice.second).first().memory.summary)
+    }
+
+    private suspend fun prepareVoiceSessions(secondAge: AgeBand = AgeBand.AGE_6_8): VoiceHarness {
+        val first = repository.createSession(AgeBand.AGE_6_8, ocean)
+        val second = repository.createSession(secondAge, ConversationTopicCatalog.general)
+        settings.setActiveSessionId(AgeBand.AGE_6_8, first)
+        if (secondAge != AgeBand.AGE_6_8) settings.setActiveSessionId(secondAge, second)
+        settings.setBaseUrl("http://127.0.0.1:11434")
+        val speech = HeldSpeechController()
+        val client = HeldConversationClient()
+        startViewModel(speech, client)
+        awaitState { it.activeSessionId == first }
+        onMain { assertTrue(viewModel.startVoiceConversation()) }
+        return VoiceHarness(first, second, speech, client)
+    }
+
+    private suspend fun prepareTwoSpeakingSessions(): Pair<VoiceHarness, HeldSpeechController.Playback> {
+        val voice = prepareVoiceSessions()
+        onMain { voice.speech.recognitions.single().onResult("An ocean message.") }
+        voice.client.nextCall().result.complete(voiceSuccess("Old ocean reply."))
+        awaitState { it.voiceSession.phase == VoicePhase.SPEAKING }
+        val previousPlayback = onMain { voice.speech.playbacks.single() }
+        onMain { viewModel.openConversation(voice.second) }
+        awaitState { it.activeSessionId == voice.second }
+        onMain {
+            viewModel.stopVoiceConversation()
+            assertTrue(viewModel.startVoiceConversation())
+            voice.speech.recognitions.last().onResult("A new space message.")
+        }
+        voice.client.nextCall().result.complete(voiceSuccess("New space reply."))
+        awaitState { it.voiceSession.phase == VoicePhase.SPEAKING && it.conversationMemory.summary == "New space reply." }
+        onMain { }
+        return voice to previousPlayback
+    }
+
+    private suspend fun assertVoiceSessionUntouched(sessionId: String, expectedVoice: VoiceSessionState) {
+        val state = viewModel.uiState.value
+        assertEquals(sessionId, state.activeSessionId)
+        assertEquals(expectedVoice, state.voiceSession)
+        val snapshot = repository.observe(sessionId).first()
+        assertTrue(snapshot.turns.isEmpty())
+        assertEquals("", snapshot.memory.summary)
+        assertTrue(snapshot.memory.rememberedFacts.isEmpty())
+        assertEquals("", snapshot.memory.nextDirection)
+    }
+
+    private fun voiceSuccess(reply: String) = ConversationResult.Success(
+        ConversationOutcome(reply, reply, "Next", listOf(reply)),
+    )
+
+    private data class VoiceHarness(
+        val first: String,
+        val second: String,
+        val speech: HeldSpeechController,
+        val client: HeldConversationClient,
+    )
+
+    private class HeldSpeechController : SpeechController {
+        data class Recognition(val onResult: (String) -> Unit, val onError: (String) -> Unit)
+        data class Playback(val onDone: () -> Unit, val onError: (String) -> Unit)
+        val recognitions = mutableListOf<Recognition>()
+        val playbacks = mutableListOf<Playback>()
+
+        override fun startListening(onResult: (String) -> Unit, onError: (String) -> Unit) {
+            recognitions += Recognition(onResult, onError)
+        }
+
+        override fun speak(text: String, rate: Float, style: SpeechStyle, onDone: () -> Unit, onError: (String) -> Unit) {
+            playbacks += Playback(onDone, onError)
+        }
+
+        // Retain callback handles after stop/shutdown to simulate delayed platform deliveries.
+        override fun stopListening() = Unit
+        override fun stopSpeaking() = Unit
+        override fun setTtsPreference(preference: TtsPreference) = Unit
+        override fun shutdown() = Unit
+    }
+
+    private class HeldConversationClient : ConversationClient {
+        data class Call(
+            val request: ConversationRequest,
+            val result: CompletableDeferred<ConversationResult> = CompletableDeferred(),
+            val returned: CompletableDeferred<Unit> = CompletableDeferred(),
+        )
+        private val calls = Channel<Call>(Channel.UNLIMITED)
+        var requestCount = 0
+            private set
+
+        override suspend fun chat(request: ConversationRequest): ConversationResult {
+            val call = Call(request)
+            requestCount++
+            calls.send(call)
+            return call.result.await().also { call.returned.complete(Unit) }
+        }
+
+        suspend fun nextCall(): Call = withTimeout(10_000) { calls.receive() }
+        override suspend fun connectionTest(): ConversationResult = ConversationResult.Unavailable()
+        override suspend fun availableModels(): ModelDiscoveryResult = ModelDiscoveryResult.Unavailable
+    }
+
+    private suspend fun startViewModel(
+        speech: SpeechController = application.container.speechController,
+        client: ConversationClient = application.container.conversationClient,
+    ) = onMain {
+        viewModel = AppViewModel(application, speech, client)
         store.put("sessions", viewModel)
     }
 
-    private suspend fun onMain(block: () -> Unit) = withContext(Dispatchers.Main) { block() }
+    private suspend fun <T> onMain(block: () -> T): T = withContext(Dispatchers.Main) { block() }
 
     private suspend fun awaitState(predicate: (AppUiState) -> Boolean): AppUiState = try {
         withTimeout(10_000) { viewModel.uiState.first(predicate) }
