@@ -34,6 +34,7 @@ How to Train Your Dragon 和 Harry Potter 等品牌名称仅作为讨论话题�
 - Android 8.0（API 26）或更高版本
 
 ```bash
+cd android
 ./gradlew testDebugUnitTest lintDebug assembleDebug
 ANDROID_SERIAL=emulator-5554 ./gradlew connectedDebugAndroidTest
 adb -s emulator-5554 install -r -t app/build/outputs/apk/debug/app-debug.apk
@@ -51,6 +52,15 @@ adb -s emulator-5554 reverse tcp:11434 tcp:11434
 
 私网 HTTP 只允许在 debug 构建中手动开启；release 构建要求 HTTPS。详细步骤见 [本地 Ollama](docs/ollama-local.md) 和 [远端部署](docs/ollama-remote.md)。
 
+## 仓库目录
+
+- `android/`：当前 Android 原生应用及其 Gradle 构建文件
+- `flutter/`：后续 Flutter 客户端（当前仅含目录说明）
+- `ios/`：后续 iOS 原生客户端（当前仅含目录说明）
+- `docs/`：共享设计说明、部署指南和平台文档
+
+Android Studio 项目入口为 `android/`；Flutter 与 iOS 目录目前只是预留，不含可运行工程。
+
 ## 模型费用
 
 Qwen 开放权重和 Ollama 软件本身可免费自建；本地运行不按请求收费，但会消耗电脑的内存、电力和算力。远端机器仍会产生服务器、带宽、域名和证书等成本。应用也能在不连接模型时完成阅读、朗读、跟读和进度记录。
@@ -63,3 +73,7 @@ Qwen 开放权重和 Ollama 软件本身可免费自建；本地运行不按请�
 - 对话会把最近 8 轮、阶段总结和当前输入发送到你配置的服务。
 - 不记录 Token、儿童音频或识别文本到日志。
 - 内容规则是产品防护层，不代表已经获得教育、医疗或儿童安全认证。
+
+## 许可证
+
+本项目采用 [MIT License](LICENSE)。

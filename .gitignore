@@ -7,3 +7,17 @@ captures/
 .cxx/
 .DS_Store
 .worktrees/
+
+# Flutter client (future)
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+
+# Native iOS client (future)
+ios/Pods/
+ios/DerivedData/
+ios/xcuserdata/
+ios/*.xcuserstate
+ios/Flutter/Generated.xcconfig
+ios/Flutter/flutter_export_environment.sh
