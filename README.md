@@ -1,6 +1,6 @@
 # Kids English Companion
 
-一个面向 6–12 岁儿童的 Android 英语对话与伴读 MVP。选择年龄后首先进入英语对话；应用会在本机保存对话、阶段总结、用户信息和下一步话题方向。另有 18 篇原创分级故事，可离线阅读、逐句朗读、跟读和记录学习进度。
+一个面向 6–12 岁儿童的英语对话与伴读项目，当前包含 Android 原生和 iOS 原生客户端。选择年龄后可进入英语对话；聊天记录、阶段总结、记忆信息和下一步话题方向保存在设备本机。项目提供 18 篇原创分级故事，可离线阅读和逐句朗读。
 
 这里的“已喂书籍”采用的是可审计的本地分级内容库 + 检索增强提示（RAG），不是重新训练模型。这样更快、更容易控制答案范围，也避免把受版权保护的整本教材打包进模型。
 
@@ -21,6 +21,10 @@
 - 故事证据约束、儿童隐私/不安全问题拦截、离线降级
 - Keystore AES/GCM 加密保存可选 Bearer Token
 
+## iOS 客户端
+
+原生 SwiftUI 工程位于 `ios/KidsEnglishCompanion.xcodeproj`，最低支持 iOS 17。当前包含年龄分组、Ollama 对话与模型发现、独立历史会话、Keychain Token 保存、18 篇离线故事、逐句系统朗读、故事证据问答和完成进度。主动开启语音对话后使用 Apple Speech 与 AVSpeechSynthesizer；锁屏或后台语音是否持续取决于系统语音服务和设备状态。iOS 使用设备自带英语音色，没有集成 Google 或讯飞语音 SDK。
+
 跟读分数只是词语匹配练习，不是专业发音评估。Android 的语音识别是否完全离线取决于设备和已安装语言包。
 
 How to Train Your Dragon 和 Harry Potter 等品牌名称仅作为讨论话题，应用不包含这些书籍的原文或完整内容。话题对话与原创分级故事是两个独立入口。
@@ -32,6 +36,7 @@ How to Train Your Dragon 和 Harry Potter 等品牌名称仅作为讨论话题�
 - Android Studio / Android SDK 36
 - JDK 17
 - Android 8.0（API 26）或更高版本
+- iOS：Xcode 16+，iOS 17+
 
 ```bash
 cd android
@@ -39,6 +44,12 @@ cd android
 ANDROID_SERIAL=emulator-5554 ./gradlew connectedDebugAndroidTest
 adb -s emulator-5554 install -r -t app/build/outputs/apk/debug/app-debug.apk
 adb -s emulator-5554 reverse tcp:11434 tcp:11434
+```
+
+iOS：在 Xcode 中打开 `ios/KidsEnglishCompanion.xcodeproj`，选择 `KidsEnglishCompanion` scheme 和 iOS Simulator 或已签名的 iPhone 设备后运行。也可使用完整 Xcode 执行：
+
+```bash
+xcodebuild -project ios/KidsEnglishCompanion.xcodeproj -scheme KidsEnglishCompanion -destination 'generic/platform=iOS Simulator' build
 ```
 
 首次启动选择年龄段即可进入对话；即使模型离线，故事阅读、朗读、跟读和进度仍可使用。`Settings` 可配置：
@@ -56,10 +67,10 @@ adb -s emulator-5554 reverse tcp:11434 tcp:11434
 
 - `android/`：当前 Android 原生应用及其 Gradle 构建文件
 - `flutter/`：后续 Flutter 客户端（当前仅含目录说明）
-- `ios/`：后续 iOS 原生客户端（当前仅含目录说明）
+- `ios/`：当前 iOS 原生 SwiftUI 客户端和 Xcode 工程
 - `docs/`：共享设计说明、部署指南和平台文档
 
-Android Studio 项目入口为 `android/`；Flutter 与 iOS 目录目前只是预留，不含可运行工程。
+Android Studio 项目入口为 `android/`；Xcode 项目入口为 `ios/KidsEnglishCompanion.xcodeproj`。Flutter 目录目前只是预留，不含可运行工程。
 
 ## 模型费用
 

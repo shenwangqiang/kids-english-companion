@@ -1,0 +1,78 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {};
+	objectVersion = 60;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A10000000000000000000001 /* KidsEnglishCompanionApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000001 /* KidsEnglishCompanionApp.swift */; };
+		A10000000000000000000002 /* Domain.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000002 /* Domain.swift */; };
+		A10000000000000000000003 /* LocalStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000003 /* LocalStore.swift */; };
+		A10000000000000000000004 /* OllamaService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000004 /* OllamaService.swift */; };
+		A10000000000000000000005 /* SpeechManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000005 /* SpeechManager.swift */; };
+		A10000000000000000000006 /* ConversationViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000006 /* ConversationViews.swift */; };
+		A10000000000000000000007 /* StoryViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000007 /* StoryViews.swift */; };
+		A10000000000000000000008 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000008 /* SettingsView.swift */; };
+		A10000000000000000000009 /* age_6_8.json in Resources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000010 /* age_6_8.json */; };
+		A1000000000000000000000A /* age_9_10.json in Resources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000011 /* age_9_10.json */; };
+		A1000000000000000000000B /* age_11_12.json in Resources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000012 /* age_11_12.json */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		B10000000000000000000001 /* KidsEnglishCompanionApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KidsEnglishCompanionApp.swift; sourceTree = "<group>"; };
+		B10000000000000000000002 /* Domain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Domain.swift; sourceTree = "<group>"; };
+		B10000000000000000000003 /* LocalStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalStore.swift; sourceTree = "<group>"; };
+		B10000000000000000000004 /* OllamaService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OllamaService.swift; sourceTree = "<group>"; };
+		B10000000000000000000005 /* SpeechManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechManager.swift; sourceTree = "<group>"; };
+		B10000000000000000000006 /* ConversationViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConversationViews.swift; sourceTree = "<group>"; };
+		B10000000000000000000007 /* StoryViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StoryViews.swift; sourceTree = "<group>"; };
+		B10000000000000000000008 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		B10000000000000000000009 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		B10000000000000000000010 /* age_6_8.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = age_6_8.json; sourceTree = "<group>"; };
+		B10000000000000000000011 /* age_9_10.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = age_9_10.json; sourceTree = "<group>"; };
+		B10000000000000000000012 /* age_11_12.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = age_11_12.json; sourceTree = "<group>"; };
+		B10000000000000000000013 /* KidsEnglishCompanion.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = KidsEnglishCompanion.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		C10000000000000000000001 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		D10000000000000000000001 = {isa = PBXGroup; children = (D10000000000000000000002 /* KidsEnglishCompanion */, D10000000000000000000003 /* Products */); sourceTree = "<group>"; };
+		D10000000000000000000002 /* KidsEnglishCompanion */ = {isa = PBXGroup; children = (B10000000000000000000001 /* KidsEnglishCompanionApp.swift */, B10000000000000000000002 /* Domain.swift */, B10000000000000000000003 /* LocalStore.swift */, B10000000000000000000004 /* OllamaService.swift */, B10000000000000000000005 /* SpeechManager.swift */, B10000000000000000000006 /* ConversationViews.swift */, B10000000000000000000007 /* StoryViews.swift */, B10000000000000000000008 /* SettingsView.swift */, B10000000000000000000009 /* Info.plist */, D10000000000000000000004 /* stories */); path = KidsEnglishCompanion; sourceTree = "<group>"; };
+		D10000000000000000000003 /* Products */ = {isa = PBXGroup; children = (B10000000000000000000013 /* KidsEnglishCompanion.app */,); name = Products; sourceTree = "<group>"; };
+		D10000000000000000000004 /* stories */ = {isa = PBXGroup; children = (B10000000000000000000010 /* age_6_8.json */, B10000000000000000000011 /* age_9_10.json */, B10000000000000000000012 /* age_11_12.json */); path = Resources/stories; sourceTree = "<group>"; };
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		E10000000000000000000001 /* KidsEnglishCompanion */ = {isa = PBXNativeTarget; buildConfigurationList = F10000000000000000000006 /* Build configuration list for PBXNativeTarget "KidsEnglishCompanion" */; buildPhases = (C10000000000000000000002 /* Sources */, C10000000000000000000001 /* Frameworks */, C10000000000000000000003 /* Resources */,); buildRules = (); dependencies = (); name = KidsEnglishCompanion; productName = KidsEnglishCompanion; productReference = B10000000000000000000013 /* KidsEnglishCompanion.app */; productType = "com.apple.product-type.application"; };
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		E10000000000000000000002 /* Project object */ = {isa = PBXProject; attributes = {BuildIndependentTargetsInParallel = 1; LastUpgradeCheck = 1600; TargetAttributes = {E10000000000000000000001 = {CreatedOnToolsVersion = 16.0; }; }; }; buildConfigurationList = F10000000000000000000005 /* Build configuration list for PBXProject "KidsEnglishCompanion" */; compatibilityVersion = "Xcode 16.0"; developmentRegion = en; hasScannedForEncodings = 0; knownRegions = (en, Base); mainGroup = D10000000000000000000001; productRefGroup = D10000000000000000000003 /* Products */; projectDirPath = ""; projectRoot = ""; targets = (E10000000000000000000001 /* KidsEnglishCompanion */,); };
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		C10000000000000000000003 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (A10000000000000000000009 /* age_6_8.json in Resources */, A1000000000000000000000A /* age_9_10.json in Resources */, A1000000000000000000000B /* age_11_12.json in Resources */,); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		C10000000000000000000002 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A10000000000000000000001 /* KidsEnglishCompanionApp.swift in Sources */, A10000000000000000000002 /* Domain.swift in Sources */, A10000000000000000000003 /* LocalStore.swift in Sources */, A10000000000000000000004 /* OllamaService.swift in Sources */, A10000000000000000000005 /* SpeechManager.swift in Sources */, A10000000000000000000006 /* ConversationViews.swift in Sources */, A10000000000000000000007 /* StoryViews.swift in Sources */, A10000000000000000000008 /* SettingsView.swift in Sources */,); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		F10000000000000000000001 /* Debug project */ = {isa = XCBuildConfiguration; buildSettings = {ALWAYS_SEARCH_USER_PATHS = NO; CLANG_ENABLE_MODULES = YES; IPHONEOS_DEPLOYMENT_TARGET = 17.0; SDKROOT = iphoneos; SWIFT_VERSION = 5.0; SUPPORTED_PLATFORMS = "iphoneos iphonesimulator"; }; name = Debug; };
+		F10000000000000000000002 /* Release project */ = {isa = XCBuildConfiguration; buildSettings = {ALWAYS_SEARCH_USER_PATHS = NO; CLANG_ENABLE_MODULES = YES; IPHONEOS_DEPLOYMENT_TARGET = 17.0; SDKROOT = iphoneos; SWIFT_VERSION = 5.0; SUPPORTED_PLATFORMS = "iphoneos iphonesimulator"; }; name = Release; };
+		F10000000000000000000003 /* Debug target */ = {isa = XCBuildConfiguration; buildSettings = {CODE_SIGN_STYLE = Automatic; CURRENT_PROJECT_VERSION = 1; GENERATE_INFOPLIST_FILE = NO; INFOPLIST_FILE = KidsEnglishCompanion/Info.plist; IPHONEOS_DEPLOYMENT_TARGET = 17.0; MARKETING_VERSION = 1.0; PRODUCT_BUNDLE_IDENTIFIER = com.shenwangqiang.kidsenglishcompanion; PRODUCT_NAME = "$(TARGET_NAME)"; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = "1,2"; }; name = Debug; };
+		F10000000000000000000004 /* Release target */ = {isa = XCBuildConfiguration; buildSettings = {CODE_SIGN_STYLE = Automatic; CURRENT_PROJECT_VERSION = 1; GENERATE_INFOPLIST_FILE = NO; INFOPLIST_FILE = KidsEnglishCompanion/Info.plist; IPHONEOS_DEPLOYMENT_TARGET = 17.0; MARKETING_VERSION = 1.0; PRODUCT_BUNDLE_IDENTIFIER = com.shenwangqiang.kidsenglishcompanion; PRODUCT_NAME = "$(TARGET_NAME)"; SWIFT_VERSION = 5.0; TARGETED_DEVICE_FAMILY = "1,2"; }; name = Release; };
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		F10000000000000000000005 /* Project configuration list */ = {isa = XCConfigurationList; buildConfigurations = (F10000000000000000000001 /* Debug project */, F10000000000000000000002 /* Release project */,); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		F10000000000000000000006 /* Target configuration list */ = {isa = XCConfigurationList; buildConfigurations = (F10000000000000000000003 /* Debug target */, F10000000000000000000004 /* Release target */,); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+/* End XCConfigurationList section */
+	};
+	rootObject = E10000000000000000000002 /* Project object */;
+}
