@@ -14,6 +14,21 @@ captures/
 .flutter-plugins-dependencies
 .packages
 
+# Flutter generated project metadata and build outputs
+flutter/.dart_tool/
+flutter/.flutter-plugins
+flutter/.flutter-plugins-dependencies
+flutter/build/
+flutter/.packages
+flutter/android/.gradle/
+flutter/android/local.properties
+flutter/ios/Pods/
+flutter/ios/DerivedData/
+flutter/ios/xcuserdata/
+flutter/ios/*.xcuserstate
+flutter/ios/Flutter/Generated.xcconfig
+flutter/ios/Flutter/flutter_export_environment.sh
+
 # Native iOS client (future)
 ios/Pods/
 ios/DerivedData/

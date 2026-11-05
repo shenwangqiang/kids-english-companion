@@ -34,13 +34,15 @@ The Flutter app uses a light Material 3 theme and the Android page hierarchy. It
 3. Ollama `/api/tags` model discovery, `/api/chat` conversation, connection test, refresh, manual model entry, optional Bearer token, connection errors, and offline states.
 4. The 18 original graded stories, offline story reading, sentence playback, vocabulary, fixed comprehension questions, story-grounded tutor questions, and completion state.
 5. Speaking practice with speech recognition, normalized word-match feedback, retry, and saved progress.
-6. Voice conversation loop with explicit start and stop controls, visible listening/thinking/speaking states, and system TTS fallback.
+6. Voice conversation with explicit start and stop controls and visible listening/thinking/speaking states. Recognition runs as one short utterance per listen call; after the assistant speaks, the app starts a new listen call only while the user-started session remains active.
 7. Settings for model endpoint, model, token, age band, speech rate, and TTS preference (`自动 / Google / 讯飞`).
 8. Deterministic input safety checks, child privacy rules, and bounded model outputs equivalent to the Android behavior.
 
 ### Platform-Specific Follow-Up
 
-Android lock-screen conversation and reliable Google-to-iFlytek TTS provider selection require native Android services or a platform-channel adapter. They are a separate follow-up milestone. The Flutter core must not present these as working on Android until the native bridge is implemented and manually verified.
+Android lock-screen conversation requires the native foreground service and lock-screen activity behavior or a platform-channel adapter. It is a separate follow-up milestone. The Flutter core must not present lock-screen continuation as working until the native bridge is implemented and manually verified.
+
+On Android, Google and iFlytek TTS engine selection is part of the Flutter core through the Android engine enumeration and selection APIs exposed by `flutter_tts`. Automatic mode tries Google English, then iFlytek English, then the system default. On iOS, use the system English voice and explain that provider choice is unavailable. The `speech_to_text` plugin is designed for short phrases, not a long-running microphone stream; the conversation loop therefore uses separate short recognition calls and remains user-stoppable. If that sequence is unreliable on a target device, provide a tap-to-talk fallback and do not claim continuous listening.
 
 iOS voice recognition and background continuation remain subject to Apple's APIs and device policy. Flutter does not promise lock-screen recognition on iOS. Text chat and reading remain available if speech services are unavailable.
 
@@ -73,7 +75,7 @@ Each feature owns presentation and state transitions. Data access and platform a
 - Use `package:http` for Ollama requests. Apply explicit timeouts, response validation, and bounded error messages.
 - Use `sqflite` for local sessions, ordered turns, story completion, and practice results. Writes that update a conversation turn and its memory are transactional.
 - Use `shared_preferences` for non-secret user preferences and `flutter_secure_storage` for the optional Bearer token.
-- Use `speech_to_text` for user-started recognition and `flutter_tts` for sentence/reply playback and speech-rate control. Isolate the two behind platform-facing services so provider-specific native integration can be added later.
+- Use `speech_to_text` for user-started short-utterance recognition and `flutter_tts` for sentence/reply playback, speech-rate control, and Android engine selection. Isolate both behind platform-facing services. The speech plugin documents short phrases as its target use case, so the app must stop and restart recognition around each conversational turn rather than rely on one continuous stream.
 
 The Flutter app has its own local database and secure-storage namespace. It does not migrate or share history with the native Android or iOS apps in this phase.
 
@@ -81,7 +83,7 @@ The Flutter app has its own local database and secure-storage namespace. It does
 
 ### Stories
 
-Copy the three existing JSON story files into `flutter/assets/stories/` and declare them as bundled Flutter assets. Preserve their schema and IDs. Add a consistency check that compares the Flutter copies with the Android source assets so story content cannot silently drift.
+Copy the three existing JSON story files into `flutter/assets/stories/` and declare them as bundled Flutter assets. Preserve their schema and IDs, and compare the copied files directly with the Android source assets during setup.
 
 ### Ollama Conversation
 
@@ -130,10 +132,9 @@ Copy the three existing JSON story files into `flutter/assets/stories/` and decl
 
 1. Android shows an ongoing foreground notification with a clear Stop action during a voice session.
 2. An explicitly started voice session can continue across Android screen lock as the native app currently supports.
-3. Google and iFlytek provider selection follow the configured `自动 / Google / 讯飞` policy and fall back predictably when a provider is unavailable.
-4. iOS limitations are stated in settings/help; no unsupported lock-screen promise is shown.
+3. iOS limitations are stated in settings/help; no unsupported lock-screen or provider-selection promise is shown.
 
-The current execution environment does not have the `flutter` command installed. Flutter validation therefore requires installing or selecting a local Flutter SDK before the build stage; do not claim successful Flutter builds until those commands have run.
+The Flutter SDK is installed at `/Users/lisi/flutter` (Flutter 3.47.5 stable, Dart 3.13.4). The current Codex command environment omits `/Users/lisi/flutter/bin` from `PATH`, so invoke the SDK by full path or set `PATH` explicitly. Full Xcode 27.1 is installed and recognized when `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer` is set. `flutter doctor` reports Android SDK 36 and JDK 21, but some Android SDK licenses remain unaccepted; resolve that before Android builds if Gradle requires those components. An iPhone 18 Pro simulator is available. Do not claim successful Flutter builds until the actual commands have run.
 
 ## Non-Goals
 
@@ -149,6 +150,6 @@ The current execution environment does not have the `flutter` command installed.
 
 1. Flutter audio plugins differ by OS and installed service. Keep the feature behind interfaces and test on both simulator/emulator and real hardware.
 2. Android lock-screen behavior has existing native code and must be bridged deliberately rather than approximated in Dart.
-3. Duplicated story JSON can drift. An asset parity check is part of the project setup and verification.
-4. The Flutter SDK is absent in the current environment. Toolchain setup is a prerequisite to compile validation.
+3. Duplicated story JSON can drift. Compare the Flutter copies directly with the Android source assets during setup.
+4. Flutter is installed; command `PATH` must be set explicitly, and Android license acceptance may be needed for Android builds.
 5. Native and Flutter apps keep separate local records. This is intentional for the first implementation and avoids an unplanned data migration.

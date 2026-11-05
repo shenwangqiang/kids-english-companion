@@ -1,6 +1,6 @@
 # Kids English Companion
 
-一个面向 6–12 岁儿童的英语对话与伴读项目，当前包含 Android 原生和 iOS 原生客户端。选择年龄后可进入英语对话；聊天记录、阶段总结、记忆信息和下一步话题方向保存在设备本机。项目提供 18 篇原创分级故事，可离线阅读和逐句朗读。
+一个面向 6–12 岁儿童的英语对话与伴读项目，包含 Android 原生、iOS 原生和 Flutter 客户端。选择年龄后可进入英语对话；聊天记录、阶段总结、记忆信息和下一步话题方向保存在设备本机。项目提供 18 篇原创分级故事，可离线阅读和逐句朗读。
 
 这里的“已喂书籍”采用的是可审计的本地分级内容库 + 检索增强提示（RAG），不是重新训练模型。这样更快、更容易控制答案范围，也避免把受版权保护的整本教材打包进模型。
 
@@ -26,6 +26,25 @@
 原生 SwiftUI 工程位于 `ios/KidsEnglishCompanion.xcodeproj`，最低支持 iOS 17。当前包含年龄分组、Ollama 对话与模型发现、独立历史会话、Keychain Token 保存、18 篇离线故事、逐句系统朗读、故事证据问答和完成进度。主动开启语音对话后使用 Apple Speech 与 AVSpeechSynthesizer；锁屏或后台语音是否持续取决于系统语音服务和设备状态。iOS 使用设备自带英语音色，没有集成 Google 或讯飞语音 SDK。
 
 跟读分数只是词语匹配练习，不是专业发音评估。Android 的语音识别是否完全离线取决于设备和已安装语言包。
+
+## Flutter 客户端
+
+Flutter 工程位于 `flutter/`，共用 Android Material 3 主题和产品流程，支持 Android 与 iOS。当前功能包括年龄分组、Ollama 对话与模型发现、独立本地历史、18 篇离线故事、故事问答、跟读评分、语音输入、英语 TTS 和连接设置。Flutter 的会话数据库与两个原生应用相互独立；当前不迁移历史记录。Android 锁屏语音后续需要原生前台服务桥接，目前 Flutter 不提供锁屏继续对话。
+
+```bash
+cd flutter
+/Users/lisi/flutter/bin/flutter pub get
+/Users/lisi/flutter/bin/flutter run -d <device>
+```
+
+iOS 命令需指定完整 Xcode：
+
+```bash
+cd flutter
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer /Users/lisi/flutter/bin/flutter run -d <ios-device>
+```
+
+Android 模拟器访问 Mac Ollama 使用 `http://10.0.2.2:11434`；iOS 模拟器可使用 `http://127.0.0.1:11434`；真机使用 Mac 局域网 IP。远端服务使用 HTTPS。Android 的 Google / 讯飞 TTS 引擎选择仅在设备安装对应引擎和英语数据时生效；iOS 使用系统英语语音。语音识别按单次短句启动，不会静默常开。
 
 How to Train Your Dragon 和 Harry Potter 等品牌名称仅作为讨论话题，应用不包含这些书籍的原文或完整内容。话题对话与原创分级故事是两个独立入口。
 
@@ -66,11 +85,11 @@ xcodebuild -project ios/KidsEnglishCompanion.xcodeproj -scheme KidsEnglishCompan
 ## 仓库目录
 
 - `android/`：当前 Android 原生应用及其 Gradle 构建文件
-- `flutter/`：后续 Flutter 客户端（当前仅含目录说明）
+- `flutter/`：共享 Android/iOS Flutter 客户端
 - `ios/`：当前 iOS 原生 SwiftUI 客户端和 Xcode 工程
 - `docs/`：共享设计说明、部署指南和平台文档
 
-Android Studio 项目入口为 `android/`；Xcode 项目入口为 `ios/KidsEnglishCompanion.xcodeproj`。Flutter 目录目前只是预留，不含可运行工程。
+Android Studio 项目入口为 `android/`；原生 Xcode 项目入口为 `ios/KidsEnglishCompanion.xcodeproj`；Flutter 项目入口为 `flutter/`。
 
 ## 模型费用
 

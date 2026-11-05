@@ -1,0 +1,153 @@
+[
+  {
+    "id": "mia-red-kite", "title": "Mia and the Red Kite", "ageBand": "6-8", "cefr": "A1",
+    "summary": "Mia follows her kite after the wind carries it away.",
+    "paragraphs": [
+      {"id":"p1","sentences":[
+        {"id":"s1","text":"Mia has a bright red kite.","chineseHint":"米娅有一只鲜红色的风筝。"},
+        {"id":"s2","text":"She runs with it under the blue sky.","chineseHint":"她在蓝天下带着风筝奔跑。"},
+        {"id":"s3","text":"A strong wind lifts the kite above a green tree.","chineseHint":"一阵大风把风筝吹到一棵绿树上方。"}]},
+      {"id":"p2","sentences":[
+        {"id":"s4","text":"The red kite lands in the tree.","chineseHint":"红风筝落在了树上。"},
+        {"id":"s5","text":"Mia asks her tall brother Ben for help.","chineseHint":"米娅请高个子的哥哥本来帮忙。"},
+        {"id":"s6","text":"Ben reaches the string, and they fly the kite together.","chineseHint":"本够到了线，他们一起放风筝。"}]}
+    ],
+    "vocabulary":[
+      {"word":"bright","definition":"full of strong light or color","chinese":"鲜亮的","example":"The kite is bright red."},
+      {"word":"kite","definition":"a light toy that flies in the wind","chinese":"风筝","example":"Mia flies a kite."},
+      {"word":"wind","definition":"moving air","chinese":"风","example":"The wind is strong."},
+      {"word":"lands","definition":"comes down to a place","chinese":"落下","example":"The kite lands in a tree."},
+      {"word":"together","definition":"with another person","chinese":"一起","example":"They play together."}
+    ],
+    "questions":[
+      {"id":"q1","prompt":"What color is Mia's kite?","answerConcepts":["red"]},
+      {"id":"q2","prompt":"Where does the kite land?","answerConcepts":["tree"]},
+      {"id":"q3","prompt":"Who helps Mia?","answerConcepts":["Ben"]}
+    ]
+  },
+  {
+    "id":"bens-tiny-garden","title":"Ben's Tiny Garden","ageBand":"6-8","cefr":"A1","summary":"Ben learns how a seed becomes a flower.",
+    "paragraphs":[
+      {"id":"p1","sentences":[
+        {"id":"s1","text":"Ben puts a small seed in a brown pot.","chineseHint":"本把一颗小种子放进棕色花盆。"},
+        {"id":"s2","text":"He gives it water every morning.","chineseHint":"他每天早上给它浇水。"},
+        {"id":"s3","text":"The warm sun shines on the pot.","chineseHint":"温暖的阳光照在花盆上。"}]},
+      {"id":"p2","sentences":[
+        {"id":"s4","text":"First, a green leaf appears.","chineseHint":"首先，一片绿叶出现了。"},
+        {"id":"s5","text":"Next, the stem grows tall.","chineseHint":"接着，茎长高了。"},
+        {"id":"s6","text":"At last, a yellow flower opens, and Ben smiles.","chineseHint":"最后，一朵黄花开放了，本笑了。"}]}
+    ],
+    "vocabulary":[
+      {"word":"seed","definition":"the small beginning of a plant","chinese":"种子","example":"The seed is small."},
+      {"word":"pot","definition":"a container for a plant","chinese":"花盆","example":"The plant is in a pot."},
+      {"word":"shines","definition":"gives bright light","chinese":"照耀","example":"The sun shines."},
+      {"word":"leaf","definition":"a flat green part of a plant","chinese":"叶子","example":"A leaf appears."},
+      {"word":"stem","definition":"the main upright part of a plant","chinese":"茎","example":"The stem grows tall."}
+    ],
+    "questions":[
+      {"id":"q1","prompt":"What does Ben put in the pot?","answerConcepts":["seed"]},
+      {"id":"q2","prompt":"When does Ben water it?","answerConcepts":["morning"]},
+      {"id":"q3","prompt":"What color is the flower?","answerConcepts":["yellow"]}
+    ]
+  },
+  {
+    "id":"sleepy-little-train","title":"The Sleepy Little Train","ageBand":"6-8","cefr":"Pre-A1","summary":"A little train finishes its evening trip.",
+    "paragraphs":[
+      {"id":"p1","sentences":[
+        {"id":"s1","text":"A little train wakes at six o'clock.","chineseHint":"一列小火车六点醒来。"},
+        {"id":"s2","text":"It carries people past farms and rivers.","chineseHint":"它载着人们经过农场和河流。"},
+        {"id":"s3","text":"At noon, it rests beside the station clock.","chineseHint":"中午，它在车站钟旁休息。"}]},
+      {"id":"p2","sentences":[
+        {"id":"s4","text":"At seven in the evening, the last family gets off.","chineseHint":"晚上七点，最后一家人下车。"},
+        {"id":"s5","text":"The little train rolls into its warm shed.","chineseHint":"小火车驶进温暖的车棚。"},
+        {"id":"s6","text":"It closes its lights and sleeps until morning.","chineseHint":"它关上灯，睡到早晨。"}]}
+    ],
+    "vocabulary":[
+      {"word":"train","definition":"a line of railway cars","chinese":"火车","example":"The train is little."},
+      {"word":"carries","definition":"takes people or things somewhere","chinese":"运送","example":"It carries people."},
+      {"word":"station","definition":"a place where trains stop","chinese":"车站","example":"The train stops at the station."},
+      {"word":"evening","definition":"the end part of the day","chinese":"傍晚","example":"It is seven in the evening."},
+      {"word":"shed","definition":"a small building for storage","chinese":"车棚","example":"The train sleeps in a shed."}
+    ],
+    "questions":[
+      {"id":"q1","prompt":"What time does the train wake?","answerConcepts":["six"]},
+      {"id":"q2","prompt":"Where does it rest at noon?","answerConcepts":["station"]},
+      {"id":"q3","prompt":"Where does the train sleep?","answerConcepts":["shed"]}
+    ]
+  },
+  {
+    "id":"coco-finds-friend","title":"Coco Finds a Friend","ageBand":"6-8","cefr":"A1","summary":"A shy puppy learns to introduce herself.",
+    "paragraphs":[
+      {"id":"p1","sentences":[
+        {"id":"s1","text":"Coco is a shy brown puppy at the park.","chineseHint":"可可是一只在公园里的害羞棕色小狗。"},
+        {"id":"s2","text":"She sees a white rabbit playing with a ball.","chineseHint":"她看见一只白兔在玩球。"},
+        {"id":"s3","text":"Coco feels nervous, but she walks closer.","chineseHint":"可可感到紧张，但她走近了一些。"}]},
+      {"id":"p2","sentences":[
+        {"id":"s4","text":"Hello, my name is Coco, she says.","chineseHint":"“你好，我叫可可，”她说。"},
+        {"id":"s5","text":"I am Pip, says the rabbit with a smile.","chineseHint":"“我是皮普，”兔子笑着说。"},
+        {"id":"s6","text":"Soon Coco and Pip feel happy as they roll the ball together.","chineseHint":"很快，可可和皮普一起滚球，感到很开心。"}]}
+    ],
+    "vocabulary":[
+      {"word":"shy","definition":"nervous about meeting others","chinese":"害羞的","example":"Coco is shy."},
+      {"word":"puppy","definition":"a young dog","chinese":"小狗","example":"The puppy is brown."},
+      {"word":"rabbit","definition":"a small animal with long ears","chinese":"兔子","example":"The rabbit has a ball."},
+      {"word":"nervous","definition":"worried or not relaxed","chinese":"紧张的","example":"Coco feels nervous."},
+      {"word":"closer","definition":"nearer to someone or something","chinese":"更近","example":"She walks closer."}
+    ],
+    "questions":[
+      {"id":"q1","prompt":"What animal is Coco?","answerConcepts":["puppy"]},
+      {"id":"q2","prompt":"What is the rabbit's name?","answerConcepts":["Pip"]},
+      {"id":"q3","prompt":"How do the friends feel at the end?","answerConcepts":["happy"]}
+    ]
+  },
+  {
+    "id":"picnic-for-five","title":"A Picnic for Five","ageBand":"6-8","cefr":"A1","summary":"Five friends count and share picnic food.",
+    "paragraphs":[
+      {"id":"p1","sentences":[
+        {"id":"s1","text":"Five friends meet beside the lake for a picnic.","chineseHint":"五个朋友在湖边野餐。"},
+        {"id":"s2","text":"Ana brings five apples, and Tom brings ten small sandwiches.","chineseHint":"安娜带来五个苹果，汤姆带来十个小三明治。"},
+        {"id":"s3","text":"Mei pours five cups of orange juice.","chineseHint":"梅倒了五杯橙汁。"}]},
+      {"id":"p2","sentences":[
+        {"id":"s4","text":"Each friend gets one apple, two sandwiches, and one cup.","chineseHint":"每个朋友得到一个苹果、两个三明治和一杯果汁。"},
+        {"id":"s5","text":"They save the crumbs for the ducks, not their plastic bags.","chineseHint":"他们把面包屑留给鸭子，但不留下塑料袋。"},
+        {"id":"s6","text":"The five friends clean the grass before they go home.","chineseHint":"五个朋友回家前清理了草地。"}]}
+    ],
+    "vocabulary":[
+      {"word":"picnic","definition":"a meal eaten outside","chinese":"野餐","example":"We have a picnic."},
+      {"word":"lake","definition":"a large area of water","chinese":"湖","example":"They sit by the lake."},
+      {"word":"pours","definition":"makes a drink flow into a cup","chinese":"倒入","example":"Mei pours juice."},
+      {"word":"each","definition":"every one in a group","chinese":"每一个","example":"Each friend gets an apple."},
+      {"word":"crumbs","definition":"very small pieces of bread","chinese":"面包屑","example":"The ducks eat crumbs."}
+    ],
+    "questions":[
+      {"id":"q1","prompt":"How many friends have the picnic?","answerConcepts":["Five"]},
+      {"id":"q2","prompt":"Who brings apples?","answerConcepts":["Ana"]},
+      {"id":"q3","prompt":"What do they clean before leaving?","answerConcepts":["grass"]}
+    ]
+  },
+  {
+    "id":"moon-in-window","title":"The Moon in My Window","ageBand":"6-8","cefr":"A1","summary":"Lina watches the moon change as clouds pass.",
+    "paragraphs":[
+      {"id":"p1","sentences":[
+        {"id":"s1","text":"Lina sees a round moon in her window at night.","chineseHint":"夜里，莉娜从窗户看到一轮圆月。"},
+        {"id":"s2","text":"A gray cloud covers half of it.","chineseHint":"一朵灰云遮住了月亮的一半。"},
+        {"id":"s3","text":"Lina thinks the moon is playing hide-and-seek.","chineseHint":"莉娜觉得月亮在玩捉迷藏。"}]},
+      {"id":"p2","sentences":[
+        {"id":"s4","text":"The cloud moves, and silver light fills her room.","chineseHint":"云移开了，银色月光充满房间。"},
+        {"id":"s5","text":"Lina draws the moon and three bright stars.","chineseHint":"莉娜画下月亮和三颗明亮的星星。"},
+        {"id":"s6","text":"She puts the picture near her bed and says good night.","chineseHint":"她把画放在床边，然后说晚安。"}]}
+    ],
+    "vocabulary":[
+      {"word":"moon","definition":"the bright object seen in the night sky","chinese":"月亮","example":"The moon is round."},
+      {"word":"cloud","definition":"a white or gray shape in the sky","chinese":"云","example":"A cloud covers the moon."},
+      {"word":"covers","definition":"lies over or hides something","chinese":"遮住","example":"The cloud covers half."},
+      {"word":"silver","definition":"a shiny gray-white color","chinese":"银色的","example":"Silver light fills the room."},
+      {"word":"draws","definition":"makes a picture with a pen or pencil","chinese":"画","example":"Lina draws stars."}
+    ],
+    "questions":[
+      {"id":"q1","prompt":"When does Lina see the moon?","answerConcepts":["night"]},
+      {"id":"q2","prompt":"What covers the moon?","answerConcepts":["cloud"]},
+      {"id":"q3","prompt":"Where does Lina put her picture?","answerConcepts":["bed"]}
+    ]
+  }
+]
